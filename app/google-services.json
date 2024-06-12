@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "986516655701",
+    "firebase_url": "https://ohm-shanti-default-rtdb.firebaseio.com",
+    "project_id": "ohm-shanti",
+    "storage_bucket": "ohm-shanti.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986516655701:android:9193c5b603b2a5bcdacedc",
+        "android_client_info": {
+          "package_name": "com.ohm.shantiapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZ9neyeZFwLT2F1Wh7Ul-gh2JucFmuKMw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986516655701:android:6d1fe58f271ecbf1dacedc",
+        "android_client_info": {
+          "package_name": "com.ohmshantiapps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZ9neyeZFwLT2F1Wh7Ul-gh2JucFmuKMw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
