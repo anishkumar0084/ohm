@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <VideoView
+            android:id="@+id/videoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/user_info_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="3dp"
+        android:gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+
+        <!-- User Name and Description -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <!-- Profile Photo on Left of User Name -->
+                <ImageView
+                    android:id="@+id/user_profile_photo"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/ic_pause_circle"
+                    android:src="@drawable/avatar" />
+
+                <TextView
+                    android:id="@+id/user_name"
+                    android:layout_width="98dp"
+                    android:layout_height="wrap_content"
+                    android:text="Username"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/description"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="This is a description of the reel"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/used_audio"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/ic_pause_circle"
+            android:src="@drawable/avatar" />
+
+
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/interaction_buttons_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:orientation="vertical"
+        android:gravity="end"
+        android:padding="16dp">
+
+        <!-- Like Button -->
+        <ImageButton
+            android:id="@+id/like_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_like"
+            android:contentDescription="@string/like_button_description"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:onClick="onLikeButtonClick"
+            android:layout_marginBottom="16dp"
+            app:tint="@android:color/white" />
+
+        <!-- Comment Button -->
+        <ImageButton
+            android:id="@+id/comment_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_comment"
+            android:contentDescription="@string/comment_button_description"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:onClick="onCommentButtonClick"
+            android:layout_marginBottom="16dp"
+            app:tint="@android:color/white" />
+
+        <!-- Share Button -->
+        <ImageButton
+            android:id="@+id/share_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_share"
+            android:contentDescription="@string/share_button_description"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:onClick="onShareButtonClick"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
+</RelativeLayout>
