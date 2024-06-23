@@ -24,11 +24,13 @@ android {
 
 
     buildTypes {
-        release {
+        getByName("release") {
             isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                file("proguard-rules.pro")
             )
         }
     }
@@ -87,6 +89,7 @@ dependencies {
 
     implementation(libs.media3.exoplayer)
     implementation(libs.androidx.media3.exoplayer.dash)
+    implementation("androidx.media3:media3-exoplayer-hls:1.0.0")
     implementation(libs.androidx.media3.ui)
     implementation("com.android.volley:volley:1.2.1")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

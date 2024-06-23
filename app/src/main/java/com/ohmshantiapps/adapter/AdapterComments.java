@@ -23,9 +23,12 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelComments;
+import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.ModelUser;
 import com.ohmshantiapps.model.User;
 import com.ohmshantiapps.user.MediaView;
@@ -50,6 +53,7 @@ public class AdapterComments extends RecyclerView.Adapter<AdapterComments.MyHold
     final List<ModelComments> commentsList;
     private DatabaseReference likeRef;
     private DatabaseReference postsRef1;
+    ApiService userApi;
 
     boolean mProcessLike = false;
 
@@ -79,6 +83,8 @@ public class AdapterComments extends RecyclerView.Adapter<AdapterComments.MyHold
         String pId = commentsList.get(position).getpId();
         String pLikes = commentsList.get(position).getpLikes();
         String type = commentsList.get(position).getType();
+
+        updatecomment(String.valueOf(commentsList.size()), pId);
 
         switch (type) {
             case "text":
@@ -310,6 +316,23 @@ public class AdapterComments extends RecyclerView.Adapter<AdapterComments.MyHold
         });
 
 
+    }
+
+    private void updatecomment(String size,String id){
+        userApi = RetrofitClient.getClient().create(ApiService.class);
+        ModelPost modelPost = new ModelPost(null,null,null,null,null,id,null,null,null,null,size,null);
+        Call<Void> call2 = userApi.updatePostByPid(Long.parseLong(id),modelPost);
+        call2.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable throwable) {
+
+            }
+        });
     }
 
     private void getUserInfo(MyHolder holder, String id) {

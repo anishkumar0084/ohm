@@ -2,7 +2,10 @@ package com.ohmshantiapps.adapter;
 
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
+
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +13,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -37,13 +41,17 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.Adpref;
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.DeleteRequestBody;
+import com.ohmshantiapps.api.DeleteResponse;
+import com.ohmshantiapps.api.LikeResponse;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.groups.ShareGroupActivity;
 import com.ohmshantiapps.model.ModelPost;
@@ -62,35 +70,46 @@ import com.squareup.picasso.OkHttp3Downloader;
 import com.squareup.picasso.Picasso;
 import com.volokh.danylo.hashtaghelper.HashTagHelper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Response;
 
 @SuppressWarnings("ALL")
 public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
     Context context;
-    final List<ModelPost> postList;
+    List<ModelPost> postList;
+    private boolean isLiked = false;
 
     private String userId;
-    private final DatabaseReference likeRef;
     private final DatabaseReference viewRef;
     private final DatabaseReference postsRef1;
     boolean mProcessLike = false;
     boolean mProcessView = false;
+
+    ApiService apiService;
 
     public AdapterPost(Context context, List<ModelPost> postList) {
         this.context = context;
         this.postList = postList;
         viewRef = FirebaseDatabase.getInstance().getReference().child("Views");
         postsRef1 = FirebaseDatabase.getInstance().getReference().child("Posts");
-        likeRef = FirebaseDatabase.getInstance().getReference().child("Likes");
+         apiService = RetrofitClient.getClient().create(ApiService.class);
 
     }
 
@@ -102,6 +121,9 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         context = parent.getContext();
         return new MyHolder(view);
     }
+
+
+
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -130,7 +152,11 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         holder.pName.setText(name);
         holder.pText.setText(text);
         holder.pType.setText(type);
-        holder.views.setText(pViews);
+
+        if (!(pViews ==null)) {
+            String pview = formatViews(Long.parseLong(pViews));
+            holder.views.setText(pview);
+        }
         setLikes(holder, pId);
         setViews(holder, pId);
         String ed_text = holder.pText.getText().toString().trim();
@@ -141,11 +167,15 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             holder.constraintLayout9.setVisibility(View.GONE);
         }
 
+        if (!(comment ==null)){
+
         if (comment.equals("0")) {
             holder.commentNo.setText("Comment");
 
         } else {
+
             holder.commentNo.setText(comment);
+        }
         }
 
         HashTagHelper mTextHashTagHelper = HashTagHelper.Creator.create(context.getResources().getColor(R.color.colorPrimary), hashTag -> {
@@ -162,26 +192,9 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         holder.like.setOnClickListener(v -> {
             mProcessLike = true;
             String postId = String.valueOf(postList.get(position).getpId());
-            likeRef.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    if (mProcessLike) {
-                        if (dataSnapshot.child(postId).hasChild(userId)) {
-                            likeRef.child(postId).child(userId).removeValue();
-                            mProcessLike = false;
-                        } else {
-                            likeRef.child(postId).child(userId).setValue("Liked");
-                            mProcessLike = false;
-                            addToHisNotification(""+id,""+pId,"Liked your post");
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            });
+                likePost(postId, userId,holder,position);
+                mProcessLike = false;
+//
         });
 
         holder.comment.setOnClickListener(v -> {
@@ -239,7 +252,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             context.startActivity(intent);
         });
 
-        holder.more.setOnClickListener(v -> showMoreOptions(holder.more, id, userId, pId, meme, vine));
+        holder.more.setOnClickListener(v -> showMoreOptions(holder.more, id, userId, pId, meme, vine,position));
 
 
 
@@ -388,26 +401,12 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             public void onDoubleClick(View view) {
                 mProcessLike = true;
                 String postId = String.valueOf(postList.get(position).getpId());
-                likeRef.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        if (mProcessLike) {
-                            if (dataSnapshot.child(postId).hasChild(userId)) {
-                                likeRef.child(postId).child(userId).removeValue();
-                                mProcessLike = false;
-                            } else {
-                                likeRef.child(postId).child(userId).setValue("Liked");
-                                mProcessLike = false;
-                                addToHisNotification(""+id,""+pId,"Liked your post");
-                            }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                    likePost(postId, userId,holder,position);
+                    mProcessLike = false;
 
-                    }
-                });
+//                addToHisNotification(""+id,""+pId,"Liked your post");
+//
             }
         }));
 
@@ -442,7 +441,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                                     viewRef.child(postId).child(userId).setValue("viewed");
                                     context.startActivity(intent);
                                     intent.putExtra("postIds", "0");
-                                    addToHisNotification(""+id,""+pId,"Viewed  your post");
+//                                    addToHisNotification(""+id,""+pId,"Viewed  your post");
                                 }
                             }
                         }
@@ -461,26 +460,9 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             public void onDoubleClick(View view) {
                 mProcessLike = true;
                 String postId = String.valueOf(postList.get(position).getpId());
-                likeRef.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        if (mProcessLike) {
-                            if (dataSnapshot.child(postId).hasChild(userId)) {
-                                likeRef.child(postId).child(userId).removeValue();
-                                mProcessLike = false;
-                            } else {
-                                likeRef.child(postId).child(userId).setValue("Liked");
-                                mProcessLike = false;
-                                addToHisNotification(""+id,""+pId,"Liked your post");
-                            }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-                });
+                    likePost(postId, userId,holder,position);
+                    mProcessLike = false;
             }
         }));
 
@@ -490,24 +472,37 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
     private void noLike(int position, MyHolder holder) {
         String postId = String.valueOf(postList.get(position).getpId());
-      likeRef.child(postId).addValueEventListener(new ValueEventListener() {
-          @Override
-          public void onDataChange(@NonNull DataSnapshot snapshot) {
-             String numOfLikes = String.valueOf((int) snapshot.getChildrenCount());
-              if (numOfLikes.equals("0")) {
-                  holder.likeNo.setText("Like");
 
-              } else {
-                  holder.likeNo.setText(snapshot.getChildrenCount()+"");
-              }
+        Call<LikeResponse> call = apiService.getLikes(postId, "get_likes");
 
-          }
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
+            @Override
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LikeResponse likeResponse = response.body();
+                    List<String> userIds = likeResponse.getUserIds();
+                    String likes= String.valueOf(likeResponse.getLikeCount());
 
-          @Override
-          public void onCancelled(@NonNull DatabaseError error) {
 
-          }
-      });
+                    if (likes.equals("0")||likes==null) {
+                      holder.likeNo.setText("Like");
+
+                   }else {
+                        holder.likeNo.setText(formatViews(Long.parseLong(likes))+"");
+                   }
+
+
+                } else {
+                    Log.e(TAG, "Failed to get likes. Response code: " + response.code());
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
+
+            }
+        });
     }
 
     private void vidshareMoreOptions(RelativeLayout video_share, String pId, String vine, String text) {
@@ -636,26 +631,110 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
     private void setLikes(MyHolder holder, String postKey) {
-        likeRef.addValueEventListener(new ValueEventListener() {
+        checkLikeStatus(postKey,userId,holder);
+    }
+    private void checkLikeStatus(String postId, String userId, MyHolder holder) {
+        Call<LikeResponse> call = apiService.checkLikeStatus(postId, userId, "check");
+
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.child(postKey).hasChild(userId)){
-
-                    holder.like_img.setImageResource(R.drawable.ic_liked);
-
-                }else {
-                    holder.like_img.setImageResource(R.drawable.ic_like);
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful()) {
+                    LikeResponse likeResponse = response.body();
+                    if (likeResponse != null) {
+                        String status = likeResponse.getStatus();
+                        if ("liked".equals(status)) {
+                            isLiked = true;
+                        } else if ("unliked".equals(status)) {
+                            isLiked = false;
+                        }
+                        updateLikeButtonState(holder);
+                    } else {
+                        Toast.makeText(context, "Null response received", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(context, "Failed to get like status", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
+                Toast.makeText(context, "Network error: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
 
+
+
+
+
+}
+
+    private void likePost(String postId, String userId, MyHolder holder,int position) {
+        Call<LikeResponse> call = apiService.toggleLike(postId, userId, "toggle");
+
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
+            @Override
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful()) {
+                    LikeResponse likeResponse = response.body();
+                    if (likeResponse != null) {
+                        String status = likeResponse.getStatus();
+                        if ("liked".equals(status)) {
+                            isLiked = true;
+                            noLike(position,holder);
+                            Toast.makeText(context, "Post liked successfully", Toast.LENGTH_SHORT).show();
+                        } else if ("unliked".equals(status)) {
+                            isLiked = false;
+                            noLike(position,holder);
+
+                                Toast.makeText(context, "Post unliked successfully", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(context, "Unexpected response", Toast.LENGTH_SHORT).show();
+                        }
+                        updateLikeButtonState(holder);
+                    } else {
+                        Toast.makeText(context, "Null response received", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(context, "Failed to toggle like status", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
+                Toast.makeText(context, "Network error: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void showMoreOptions(ImageView more, String id, String userId, String pId, String meme, String vine) {
+
+
+
+
+
+
+
+
+
+    private void updateLikeButtonState(MyHolder holder) {
+
+        if (isLiked) {
+
+            holder.like_img.setImageResource(R.drawable.ic_liked);
+//
+//
+        } else {
+            holder.like_img.setImageResource(R.drawable.ic_like);
+//
+        }
+    }
+
+
+
+    private void showMoreOptions(ImageView more, String id, String userId, String pId, String meme, String vine,int position) {
+
+
+        final boolean[] isSaved = {checkIfPostIsSaved(pId)};
 
         PopupMenu popupMenu = new PopupMenu(context, more, Gravity.END);
 
@@ -664,14 +743,14 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             popupMenu.getMenu().add(Menu.NONE,0,0, "Delete");
             popupMenu.getMenu().add(Menu.NONE,1,0, "Edit");
         }
-        popupMenu.getMenu().add(Menu.NONE, 2,0,"Save");
+        popupMenu.getMenu().add(Menu.NONE, 2, 0, isSaved[0] ? "Unsave" : "Save");
         popupMenu.getMenu().add(Menu.NONE, 3,0,"Details");
         popupMenu.getMenu().add(Menu.NONE, 4,0,"Liked By");
         if (!meme.equals("noImage")){
-            popupMenu.getMenu().add(Menu.NONE, 5,0,"Download");
+//            popupMenu.getMenu().add(Menu.NONE, 5,0,"Download");
         }
         if (!vine.equals("noVideo")){
-            popupMenu.getMenu().add(Menu.NONE, 6,0,"Download");
+//            popupMenu.getMenu().add(Menu.NONE, 6,0,"Download");
         }
         if(!meme.equals("noImage") || !vine.equals("noVideo")){
             popupMenu.getMenu().add(Menu.NONE,7,0, "Fullscreen");
@@ -679,7 +758,20 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         popupMenu.setOnMenuItemClickListener(item -> {
             int id1 = item.getItemId();
             if (id1 ==0){
-                beginDelete(pId,meme,vine);
+
+                AlertDialog alertDialog = new AlertDialog.Builder(context)
+                        .setTitle("Delete Post")
+                        .setMessage("Are you sure you want to delete this post?")
+                        .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                            // User confirmed to delete the post
+                            beginDelete(pId, meme, vine, position);
+                        })
+                        .setNegativeButton(android.R.string.no, (dialog, which) -> {
+                            // User cancelled the deletion
+                            dialog.dismiss();
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
             }else if (id1 ==1){
                 Intent intent = new Intent(context, UpdatePost.class);
                 intent.putExtra("key","editPost");
@@ -687,8 +779,29 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 context.startActivity(intent);
             }
             else if (id1 ==2){
-     FirebaseDatabase.getInstance().getReference().child("Saves").child(userId)
-             .child(pId).setValue(true);
+                String firebaseAuth = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                DatabaseReference saveRef = FirebaseDatabase.getInstance().getReference().child("Saves").child(firebaseAuth).child(pId);
+                if (isSaved[0]) {
+                    // Unsave the post
+                    saveRef.removeValue().addOnSuccessListener(aVoid -> {
+                        Toast.makeText(context, "Post Unsaved", Toast.LENGTH_SHORT).show();
+                        isSaved[0] = false;
+                        item.setTitle("Save");
+                    }).addOnFailureListener(e -> {
+                        // Handle failure
+                    });
+                } else {
+                    // Save the post
+                    saveRef.setValue(true).addOnSuccessListener(aVoid -> {
+                        Toast.makeText(context, "Post Saved", Toast.LENGTH_SHORT).show();
+                        isSaved[0] = true;
+                        item.setTitle("Unsave"); // Update menu item title to "Unsave"
+                    }).addOnFailureListener(e -> {
+                        // Handle failure
+                    });
+                }
+
+
             }
             else if (id1 ==3){
                 Intent intent = new Intent(context, PostDetails.class);
@@ -743,58 +856,122 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
     }
 
-    private void beginDelete(String pId, String meme, String vine) {
+    private void beginDelete(String pId, String meme, String vine,int position) {
 
         if (vine.equals("noVideo") && meme.equals("noImage")){
-   deleteWithoutBoth(pId);
+
+            deletk(pId,position);
+
         }else if (vine.equals("noVideo")){
-          deleteWithoutVine(pId, meme);
+            deleteImage(meme,pId,position);
+
         }else if (meme.equals("noImage")){
-           deleteWithoutMeme(pId, vine);
+            deleteVideo(vine,pId,position);
+
         }
 
     }
-
-    private void deleteWithoutBoth(String pId) {
-        Query query = FirebaseDatabase.getInstance().getReference("Posts").orderByChild("pId").equalTo(pId);
-        query.addListenerForSingleValueEvent(new ValueEventListener() {
+    private boolean checkIfPostIsSaved(String pId) {
+        String firebaseAuth = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference saveRef = FirebaseDatabase.getInstance().getReference().child("Saves").child(firebaseAuth).child(pId);
+        final boolean[] isSaved = {false};
+        saveRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot ds: dataSnapshot.getChildren()){
-                    ds.getRef().removeValue();
-                }
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                isSaved[0] = snapshot.exists();
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Handle error
+            }
+        });
+        return isSaved[0];
+    }
 
+    private void deleteVideo(String videoUrl, String pId,int position) {
+        OkHttpClient client = new OkHttpClient();
+
+        RequestBody formBody = new FormBody.Builder()
+                .add("oldVideoUrl", videoUrl)
+                .add("action", "deleteVideo")
+                .build();
+
+        Request request = new Request.Builder()
+                .url("http://68.183.245.154/upload.php") // Replace with your actual delete URL
+                .post(formBody)
+                .build();
+
+        client.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
+                Toast.makeText(context, "Failed to delete video.", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) throws IOException {
+                final String responseBody = response.body().string();
+                if (response.isSuccessful()) {
+                    try {
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String status = jsonResponse.getString("status");
+                        if ("success".equals(status)) {
+                            deletk(pId,position);
+                        } else {
+                            Toast.makeText(context, "Failed to delete video.", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Toast.makeText(context, "Failed to delete video.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(context, "Failed to delete video.", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
 
-    private void deleteWithoutVine(String pId, String meme) {
+    private void deleteImage(String imageUrl,String pId,int position) {
+        OkHttpClient client = new OkHttpClient();
 
-        StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(meme);
-        picRef.delete().addOnSuccessListener(aVoid -> {
+        RequestBody formBody = new FormBody.Builder()
+                .add("oldImageUrl", imageUrl)
+                .build();
 
-            Query query = FirebaseDatabase.getInstance().getReference("Posts").orderByChild("pId").equalTo(pId);
-            query.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    for (DataSnapshot ds: dataSnapshot.getChildren()){
-                        ds.getRef().removeValue();
+        Request request = new Request.Builder()
+                .url("http://68.183.245.154/img.php") // Replace with your actual delete URL
+                .post(formBody)
+                .build();
+
+        client.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
+                    Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) throws IOException {
+                final String responseBody = response.body().string();
+                    if (response.isSuccessful()) {
+                        try {
+                            JSONObject jsonResponse = new JSONObject(responseBody);
+                            String status = jsonResponse.getString("status");
+                            if ("success".equals(status)) {
+                               deletk(pId,position);
+
+
+                            } else {
+                                Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
                     }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            });
-        }).addOnFailureListener(e -> {
-
+            }
         });
-
     }
 
     public void downloadFile(Context context, String fileName, String fileExtension, String destinationDirectory, String url){
@@ -806,28 +983,38 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         Objects.requireNonNull(downloadManager).enqueue(request);
     }
 
-    private void deleteWithoutMeme(String pId, String vine) {
-        StorageReference vidRef = FirebaseStorage.getInstance().getReferenceFromUrl(vine);
-        vidRef.delete().addOnSuccessListener(aVoid -> {
 
-            Query query = FirebaseDatabase.getInstance().getReference("Posts").orderByChild("pId").equalTo(pId);
-            query.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    for (DataSnapshot ds: dataSnapshot.getChildren()){
-                        ds.getRef().removeValue();
-                    }
+    private void deletk(String pId,int position){
+        DeleteRequestBody requestBody = new DeleteRequestBody(pId);
+
+        Call<DeleteResponse> call = apiService.deletePost(requestBody);
+        call.enqueue(new retrofit2.Callback<DeleteResponse>() {
+            @Override
+            public void onResponse(Call<DeleteResponse> call, Response<DeleteResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+
+                    removeItem(position);
+                    DatabaseReference savesRef = FirebaseDatabase.getInstance().getReference().child("Saves");
+                    savesRef.child(pId).removeValue().addOnSuccessListener(aVoid1 -> {
+                        // Successfully removed the post from Saves
+                    }).addOnFailureListener(e -> {
+                        // Handle failure
+                    });
+                    Toast.makeText(context, "Post Deleted", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    Toast.makeText(context, "Failed to delete post", Toast.LENGTH_SHORT).show();
                 }
+            }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            });
-        }).addOnFailureListener(e -> {
-
+            @Override
+            public void onFailure(Call<DeleteResponse> call, Throwable t) {
+                Toast.makeText(context, "Failed to delete post", Toast.LENGTH_SHORT).show();
+            }
         });
+
     }
+
 
     private void addToHisNotification(String hisUid, String pId, String notification){
         String timestamp = ""+System.currentTimeMillis();
@@ -847,10 +1034,50 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 });
 
     }
+    public String formatViews(long views) {
+        if (views < 1000) {
+            return String.valueOf(views); // No formatting needed
+        } else if (views < 1_00_000) {
+            // Convert to "1k", "10k", "999k" etc.
+            if (views % 1000 == 0) {
+                return String.format("%.0fk", views / 1000.0);
+            } else {
+                return String.format("%.1fk", views / 1000.0);
+            }
+        } else if (views < 1_00_00_000) {
+            // Convert to "1 lakh", "10 lakh", "99 lakh" etc.
+            if (views % 1_00_000 == 0) {
+                return String.format("%.0f lakh", views / 1_00_000.0);
+            } else {
+                return String.format("%.1f lakh", views / 1_00_000.0);
+            }
+        } else if (views < 1_000_00_00_000L) {
+            // Convert to "1 crore", "10 crore", "999 crore" etc.
+            if (views % 1_00_00_000 == 0) {
+                return String.format("%.0f crore", views / 1_00_00_000.0);
+            } else {
+                return String.format("%.1f crore", views / 1_00_00_000.0);
+            }
+        } else {
+            // Convert to "1 billion", "10 billion", "999 billion" etc.
+            if (views % 1_000_00_00_000L == 0) {
+                return String.format("%.0f billion", views / 1_000_00_00_000.0);
+            } else {
+                return String.format("%.1f billion", views / 1_000_00_00_000.0);
+            }
+        }
+    }
+
+
 
     @Override
     public int getItemCount() {
         return postList.size();
+    }
+    public void removeItem(int position) {
+        postList.remove(position);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, postList.size());
     }
 
 

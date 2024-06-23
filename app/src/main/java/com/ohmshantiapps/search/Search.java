@@ -65,13 +65,10 @@ public class Search extends AppCompatActivity {
     //Post
     AdapterPost adapterPost;
     List<ModelPost> postList;
-    //Groups
     AdapterGroups adapterGroups;
     List<ModelGroups> modelGroupsList;
-
     private static final int TOTAL_ITEMS_TO_LOAD = 7;
     private int mCurrenPage = 1;
-
     ApiService apiInterface;
 
     @SuppressLint("SetTextI18n")
@@ -106,6 +103,11 @@ public class Search extends AppCompatActivity {
             editText.setText("#"+tag);
         }
 
+        getAllPost();
+
+
+
+
 
         imageView3.setOnClickListener(v -> onBackPressed());
 
@@ -136,6 +138,8 @@ public class Search extends AppCompatActivity {
             posts_rv.setVisibility(View.GONE);
             groups_rv.setVisibility(View.GONE);
         });
+
+
 
 
         posts_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -186,7 +190,6 @@ public class Search extends AppCompatActivity {
         //Post
         posts_rv.setLayoutManager(new LinearLayoutManager(Search.this));
         postList = new ArrayList<>();
-        getAllPost();
         //Groups
         groups_rv.setLayoutManager(new LinearLayoutManager(Search.this));
         modelGroupsList = new ArrayList<>();
@@ -207,8 +210,8 @@ public class Search extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 if (!TextUtils.isEmpty(s.toString())){
                     pg.setVisibility(View.VISIBLE);
-//                    filterUser(s.toString());
-//                    filterPost(s.toString());
+                    filterUser(s.toString());
+                    filterPost(s.toString());
                     filterGroups(s.toString());
                 }else {
                     getAllUsers();
@@ -218,6 +221,8 @@ public class Search extends AppCompatActivity {
 
             }
         });
+
+
 
 
     }
@@ -274,33 +279,86 @@ public class Search extends AppCompatActivity {
         });
     }
 
-//    private void filterPost(String query) {
-//        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-//        Query q = ref.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-//        q.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                postList.clear();
-//                for (DataSnapshot ds: dataSnapshot.getChildren()){
-//                    ModelPost modelPost = ds.getValue(ModelPost.class);
-//                    if (Objects.requireNonNull(modelPost).getText().toLowerCase().contains(query.toLowerCase()) || modelPost.getType().contains(query.toLowerCase()) || modelPost.getName().contains(query.toLowerCase())){
-//                        postList.add(modelPost);
-//                    }
-//                    adapterPost = new AdapterPost(Search.this, postList);
-//                    posts_rv.setAdapter(adapterPost);
-//                    pg.setVisibility(View.GONE);
-//
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//
-//    }
+    private void filterPost(String query) {
+        Call<List<ModelPost>> postsCall = apiInterface.getAllPosts(); // Modify API call to get all posts
+        postsCall.enqueue(new Callback<List<ModelPost>>() {
+            @Override
+            public void onResponse(Call<List<ModelPost>> call, retrofit2.Response<List<ModelPost>> response) {
+                if (response.isSuccessful()) {
+                    List<ModelPost> posts = response.body();
+                    if (posts != null && !posts.isEmpty()) {
+                        // Filter posts based on the query
+                        List<ModelPost> filteredPosts = new ArrayList<>();
+                        for (ModelPost post : posts) {
+                            if ((post.getText() != null && post.getText().toLowerCase().contains(query.toLowerCase())) ||
+                                    (post.getName() != null && post.getName().toLowerCase().contains(query.toLowerCase()))) {
+                                filteredPosts.add(post);
+                            }
+                        }
 
+                        postList.clear();
+                        postList.addAll(filteredPosts);
+
+                        // Set adapter and notify changes
+                        adapterPost = new AdapterPost(Search.this, postList);
+                        posts_rv.setAdapter(adapterPost);
+                        pg.setVisibility(View.GONE);
+                        adapterPost.notifyDataSetChanged();
+                    } else {
+                        // Handle case where no posts are available
+                    }
+                } else {
+                    // Handle unsuccessful response
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ModelPost>> call, Throwable t) {
+                Toast.makeText(Search.this, "Network error: ", Toast.LENGTH_SHORT).show();
+                // Handle failure
+            }
+        });
+    }
+
+    private void filterUser(String query) {
+        Call<List<User>> call = apiInterface.getUsers();
+        call.enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful()) {
+                    List<User> userList = response.body();
+                    if (userList != null && !userList.isEmpty()) {
+                        List<User> filteredUsers = new ArrayList<>();
+                        for (User user : userList) {
+                            if ((user.getName() != null && user.getName().toLowerCase().contains(query.toLowerCase())) ||
+                                    (user.getUsername() != null && user.getUsername().toLowerCase().contains(query.toLowerCase()))) {
+                                filteredUsers.add(user);
+                                pg.setVisibility(View.GONE);
+                            }
+                        }
+
+                        // Update RecyclerView with filtered users
+                        adapterUsers = new AdapterUsers(Search.this, filteredUsers);
+                        users_rv.setAdapter(adapterUsers);
+                        pg.setVisibility(View.GONE);
+                        adapterUsers.notifyDataSetChanged();
+                    } else {
+                        // Handle case where no users are available
+                    }
+                } else {
+                    // Handle unsuccessful response
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                Toast.makeText(Search.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                // Handle network error
+            }
+        });
+    }
+
+//
 //    private void filterUser(String query) {
 //
 //        final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -334,6 +392,14 @@ public class Search extends AppCompatActivity {
 //
 //    }
 
+
+
+
+
+
+
+
+
     private void getAllPost() {
         Call<List<ModelPost>> postsCall = apiInterface.getAllPosts(); // Modify API call to get all posts
         postsCall.enqueue(new Callback<List<ModelPost>>() {
@@ -363,32 +429,6 @@ public class Search extends AppCompatActivity {
             }
         });
     }
-
-
-
-//    private void getAllPost() {
-//        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-//        Query q = ref.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-//        q.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                postList.clear();
-//                for (DataSnapshot ds: dataSnapshot.getChildren()){
-//                    ModelPost modelPost = ds.getValue(ModelPost.class);
-//                    postList.add(modelPost);
-//                    adapterPost = new AdapterPost(Search.this, postList);
-//                    posts_rv.setAdapter(adapterPost);
-//                    pg.setVisibility(View.GONE);
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
-
 
     private void getAllUsers() {
         Call<List<User>> call = apiInterface.getUsers();

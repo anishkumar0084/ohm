@@ -2,6 +2,7 @@ package com.ohmshantiapps.post;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -11,21 +12,42 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.content.res.ResourcesCompat;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.common.util.Util;
 
+import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.dash.DashMediaSource;
+import androidx.media3.exoplayer.hls.HlsMediaSource;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+
+import androidx.media3.ui.PlayerView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -38,6 +60,15 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.ModelPostRequest;
+import com.ohmshantiapps.api.RetrofitClient;
+import com.ohmshantiapps.api.SessionManager;
+import com.ohmshantiapps.api.UserApiClient;
+import com.ohmshantiapps.model.ModelPost;
+import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.user.UserProfile;
+import com.ohmshantiapps.welcome.GetTimeAgo;
 import com.squareup.picasso.Picasso;
 import com.tapadoo.alerter.Alerter;
 
@@ -45,6 +76,9 @@ import java.util.HashMap;
 import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 @SuppressWarnings("ALL")
 public class UpdatePost extends AppCompatActivity {
@@ -52,7 +86,15 @@ public class UpdatePost extends AppCompatActivity {
     private static final int PICK_VIDEO_REQUEST = 1;
 
     ImageView meme,cancel;
-    VideoView vines;
+    PlayerView vines;
+
+    private ExoPlayer player;
+    private boolean playWhenReady = true;
+    private int currentWindow = 0;
+    private long playbackPosition = 0;
+    private GestureDetector gestureDetector;
+    private FrameLayout playerContainer;
+    ApiService userApi;
     ConstraintLayout add_meme,add_vines,update_remove,remove;
     Button update_it, update_vine;
     EditText text;
@@ -71,6 +113,7 @@ public class UpdatePost extends AppCompatActivity {
 
     private Uri image_uri, video_uri;
     MediaController mediaController;
+    private UserApiClient userApiClient;
     private static final int IMAGE_PICK_CODE = 1000;
     private static final int PERMISSION_CODE = 1001;
 
@@ -99,37 +142,74 @@ public class UpdatePost extends AppCompatActivity {
         add_vines = findViewById(R.id.vines_lt);
         vines = findViewById(R.id.vines);
         mediaController = new MediaController(this);
-        vines.setMediaController(mediaController);
         mediaController.setAnchorView(vines);
         MediaController ctrl = new MediaController(UpdatePost.this);
         ctrl.setVisibility(View.GONE);
-        vines.setMediaController(ctrl);
-        vines.start();
-        vines.setOnPreparedListener(mp -> mp.setLooping(true));
 
-        firebaseAuth = FirebaseAuth.getInstance();
-        String userId = Objects.requireNonNull(firebaseAuth.getCurrentUser()).getUid();
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("Users").child(userId);
-        databaseReference.addValueEventListener(new ValueEventListener() {
+        userApi = RetrofitClient.getClient().create(ApiService.class);
+
+        userApiClient = new UserApiClient();
+        SessionManager sessionManager = new SessionManager(this);
+
+        int userId = Integer.parseInt(sessionManager.getUserId());
+
+        userApiClient.fetchUser(userId, new Callback<User>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                name = Objects.requireNonNull(dataSnapshot.child("name").getValue()).toString();
-                mName.setText(name);
-                dp = Objects.requireNonNull(dataSnapshot.child("photo").getValue()).toString();
-                try {
-                    Picasso.get().load(dp).into(circleImageView3);
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful()) {
+                    User user = response.body();
+                    if (user != null) {
+                        // Extract and display the user's name and email
+                        name = user.getName();
+                        dp = user.getPhoto();
+                        mName.setText(name);
+
+                        Glide.with(UpdatePost.this)
+                                .load(dp)
+                                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                                .error(R.drawable.avatar)  // Add an error image
+                                .into(circleImageView3);
+
+
+                    }
+
+
+
+                } else {
+                    // Show a toast message indicating the failure
+                    Toast.makeText(UpdatePost.this, "Failed to fetch user: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
-                catch (Exception e ){
-                    Picasso.get().load(R.drawable.avatar).into(circleImageView3);
-                }
-                id = Objects.requireNonNull(dataSnapshot.child("id").getValue()).toString();
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+            public void onFailure(Call<User> call, Throwable t) {
 
+                Toast.makeText(UpdatePost.this, "Failed to fetch user: ", Toast.LENGTH_SHORT).show();
             }
         });
+
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                int screenWidth = vines.getWidth();
+                float x = e.getX();
+                if (x < screenWidth / 2) {
+                    // Double-tap on the left side: rewind
+                    if (player != null) {
+                        player.seekTo(Math.max(player.getCurrentPosition() - 10000, 0));
+                    }
+                } else {
+                    // Double-tap on the right side: forward
+                    if (player != null) {
+                        player.seekTo(player.getCurrentPosition() + 10000);
+                    }
+                }
+                return true;
+            }
+        });
+
+        vines.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
+
 
         Intent intent = getIntent();
         String isUpdateKey = ""+intent.getStringExtra("key");
@@ -140,75 +220,10 @@ public class UpdatePost extends AppCompatActivity {
 
         }
 
-        remove.setOnClickListener(v -> {
-
-            meme.setImageURI(null);
-            image_uri = null;
-            update_it.setVisibility(View.VISIBLE);
-            vines.setVisibility(View.GONE);
-            update_vine.setVisibility(View.GONE);
-            remove.setVisibility(View.GONE);
-            type.setText("Text");
-        });
-        update_vine.setOnClickListener(v -> {
-            String mText = text.getText().toString().trim();
-
-            if (TextUtils.isEmpty(mText)) {
-                Alerter.create(UpdatePost.this)
-                        .setTitle("Error")
-                        .setIcon(R.drawable.ic_error)
-                        .setBackgroundColorRes(R.color.colorPrimary)
-                        .setDuration(10000)
-                        .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                        .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                        .enableSwipeToDismiss()
-                        .setText("Enter caption")
-                        .show();
-
-            }else   if (!editVine.equals("noVideo")){
-                updateWithVine(mText, String.valueOf(video_uri));
-                pd.setVisibility(View.VISIBLE);
-            }else if (vines.getDrawableState() != null){
-                updateNowVine(mText, String.valueOf(video_uri));
-                pd.setVisibility(View.VISIBLE);
-            }
-
-        });
-        add_vines.setOnClickListener(v -> {
-            //Check Permission
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-                if (checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO)
-                        == PackageManager.PERMISSION_DENIED){
-                    String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE};
-                    requestPermissions(permissions, PERMISSION_CODE);
-                }
-                else {
-                    chooseVideo();
-                }
-            }
-            else {
-                chooseVideo();
-            }
-
-        });
-        add_meme.setOnClickListener(v -> {
-
-            type.setText("Image");
-            //Check Permission
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-                if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)
-                        == PackageManager.PERMISSION_DENIED){
-                    String[] permissions = {Manifest.permission.READ_MEDIA_VIDEO};
-                    requestPermissions(permissions, PERMISSION_CODE);
-                }
-                else {
-                    pickImageFromGallery();
-                }
-            }
-            else {
-                pickImageFromGallery();
-            }
-        });
+        remove.setVisibility(View.GONE);
+        add_meme.setVisibility(View.GONE);
+        add_vines.setVisibility(View.GONE);
+        update_vine.setVisibility(View.GONE);
         update_it.setOnClickListener(v -> {
             String mText = text.getText().toString().trim();
 
@@ -218,560 +233,146 @@ public class UpdatePost extends AppCompatActivity {
                         .setIcon(R.drawable.ic_error)
                         .setBackgroundColorRes(R.color.colorPrimary)
                         .setDuration(10000)
-                        .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                        .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
+                        .setTitleTypeface(Objects.requireNonNull(ResourcesCompat.getFont(UpdatePost.this, R.font.bold)))
+                        .setTextTypeface(Objects.requireNonNull(ResourcesCompat.getFont(UpdatePost.this, R.font.med)))
                         .enableSwipeToDismiss()
                         .setText("Enter caption")
                         .show();
                 return;
             }
-            if (!editMeme.equals("noImage")){
-                updateWithMemeData(mText, String.valueOf(image_uri));
-                pd.setVisibility(View.VISIBLE);
-            }else if (meme.getDrawable() != null){
-                updateNowMemeData(mText, String.valueOf(image_uri));
-            }
+//
             else {
-                pd.setVisibility(View.VISIBLE);
                 updateData(mText);
                 pd.setVisibility(View.VISIBLE);
             }
 
         });
 
-        update_remove.setOnClickListener(v -> {
-            if (!editMeme.equals("noImage")){
-                deleteWithoutVine(editPostId, editMeme);
-                pd.setVisibility(View.VISIBLE);
-            }else if (!editVine.equals("noVideo")){
-                deleteWithoutMeme(editPostId, editVine);
-                pd.setVisibility(View.VISIBLE);
-            }
-        });
+
+        update_remove.setVisibility(View.GONE);
 
     }
 
-    private void deleteWithoutMeme(String editPostId, String editVine) {
-
-        StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(editVine);
-        picRef.delete().addOnSuccessListener(aVoid -> {
-            DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-            Query query = ref.orderByChild("pId").equalTo(editPostId);
-            query.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    for (DataSnapshot ds: dataSnapshot.getChildren()){
-                        String child = ds.getKey();
-                        dataSnapshot.getRef().child(Objects.requireNonNull(child)).child("vine").setValue("noVideo");
-                        vines.setVisibility(View.GONE);
-                        pd.setVisibility(View.GONE);
-                        update_remove.setVisibility(View.GONE);
-                        update_it.setVisibility(View.VISIBLE);
-                        update_vine.setVisibility(View.GONE);
-                    }
-
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            });
-
-        }).addOnFailureListener(e -> {
-
-        });
-    }
-
-    private void deleteWithoutVine(String editPostId, String editMeme) {
-
-        StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(editMeme);
-        picRef.delete().addOnSuccessListener(aVoid -> {
-            DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-            Query query = ref.orderByChild("pId").equalTo(editPostId);
-            query.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    for (DataSnapshot ds: dataSnapshot.getChildren()){
-                        String child = ds.getKey();
-                        dataSnapshot.getRef().child(Objects.requireNonNull(child)).child("meme").setValue("noImage");
-                        meme.setImageURI(null);
-                        image_uri = null;
-                        meme.setVisibility(View.GONE);
-                        pd.setVisibility(View.GONE);
-                        update_remove.setVisibility(View.GONE);
-                        update_it.setVisibility(View.VISIBLE);
-                        update_vine.setVisibility(View.GONE);
-                    }
-
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-                    pd.setVisibility(View.GONE);
-                    Alerter.create(UpdatePost.this)
-                            .setTitle("Error")
-                            .setIcon(R.drawable.ic_check_wt)
-                            .setBackgroundColorRes(R.color.colorPrimaryDark)
-                            .setDuration(10000)
-                            .enableSwipeToDismiss()
-                            .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                            .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                            .setText(databaseError.getMessage())
-                            .show();
-                }
-            });
-
-        }).addOnFailureListener(e -> {
-            pd.setVisibility(View.GONE);
-            Alerter.create(UpdatePost.this)
-                    .setTitle("Error")
-                    .setIcon(R.drawable.ic_check_wt)
-                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                    .setDuration(10000)
-                    .enableSwipeToDismiss()
-                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                    .setText(e.getMessage())
-                    .show();
-        });
-
-    }
-
-    private void updateNowVine(String mText, String uri) {
-        String timeStamp = String.valueOf(System.currentTimeMillis());
-        String filePathAndName = "Post/" + "Post_" + timeStamp;
-        StorageReference ref = FirebaseStorage.getInstance().getReference().child(filePathAndName);
-        ref.putFile(Uri.parse(uri)).addOnSuccessListener(taskSnapshot -> {
-            Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-            while (!uriTask.isSuccessful());
-            String downloadUri = Objects.requireNonNull(uriTask.getResult()).toString();
-            if (uriTask.isSuccessful()){
-                HashMap<String, Object> hashMap = new HashMap<>();
-                hashMap.put("id", id);
-                hashMap.put("name", name);
-                hashMap.put("dp", dp);
-                hashMap.put("text", mText);
-                hashMap.put("type", "Video");
-                hashMap.put("meme", "noImage");
-                hashMap.put("vine", downloadUri);
-                DatabaseReference dRef = FirebaseDatabase.getInstance().getReference("Posts");
-                dRef.child(editPostId).updateChildren(hashMap)
-                        .addOnSuccessListener(aVoid -> {
-
-                            Alerter.create(UpdatePost.this)
-                                    .setTitle("Successful")
-                                    .setIcon(R.drawable.ic_check_wt)
-                                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                                    .setDuration(10000)
-                                    .enableSwipeToDismiss()
-                                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                                    .setText("Post Updated")
-                                    .show();
-
-                            new Handler().postDelayed(() -> {
-                                Intent intent = new Intent(getApplicationContext(), Post.class);
-                                startActivity(intent);
-                                finish();
 
 
-                            }, 2000);
 
-                            text.setText("");
-                            vines.setVideoURI(null);
-                            video_uri = null;
-                            vines.setVisibility(View.GONE);
-                            update_vine.setVisibility(View.GONE);
-                            update_it.setVisibility(View.VISIBLE);
-                            type.setText("Text");
-                            pd.setVisibility(View.GONE);
-                            update_remove.setVisibility(View.GONE);
-                        })
-                        .addOnFailureListener(e -> Alerter.create(UpdatePost.this)
-                                .setTitle("Error")
-                                .setIcon(R.drawable.ic_check_wt)
-                                .setBackgroundColorRes(R.color.colorPrimaryDark)
-                                .setDuration(10000)
-                                .enableSwipeToDismiss()
-                                .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                                .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                                .setText(e.getMessage())
-                                .show());
-            }
-        }).addOnFailureListener(e -> {
-            pd.setVisibility(View.GONE);
-            Alerter.create(UpdatePost.this)
-                    .setTitle("Error")
-                    .setIcon(R.drawable.ic_check_wt)
-                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                    .setDuration(10000)
-                    .enableSwipeToDismiss()
-                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                    .setText(e.getMessage())
-                    .show();
-        });
+    private void updateData(String mText) {
 
-    }
-    private void updateWithVine(String mText, String uri) {
-        String timeStamp = String.valueOf(System.currentTimeMillis());
-        String filePathAndName = "Post/" + "Post_" + timeStamp;
-        StorageReference ref = FirebaseStorage.getInstance().getReference().child(filePathAndName);
-        ref.putFile(Uri.parse(uri)).addOnSuccessListener(taskSnapshot -> {
-            Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-            while (!uriTask.isSuccessful());
-            String downloadUri = Objects.requireNonNull(uriTask.getResult()).toString();
-            if (uriTask.isSuccessful()){
-                HashMap<String, Object> hashMap = new HashMap<>();
-                hashMap.put("id", id);
-                hashMap.put("name", name);
-                hashMap.put("dp", dp);
-                hashMap.put("text", mText);
-                hashMap.put("type", "Video");
-                hashMap.put("meme", "noImage");
-                hashMap.put("vine", downloadUri);
-                DatabaseReference dRef = FirebaseDatabase.getInstance().getReference("Posts");
-                dRef.child(editPostId).updateChildren(hashMap).addOnSuccessListener(aVoid -> {
-                    Alerter.create(UpdatePost.this)
-                            .setTitle("Successful")
-                            .setIcon(R.drawable.ic_check_wt)
-                            .setBackgroundColorRes(R.color.colorPrimaryDark)
-                            .setDuration(10000)
-                            .enableSwipeToDismiss()
-                            .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                            .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                            .setText("Post Updated")
-                            .show();
+        userApi = RetrofitClient.getClient().create(ApiService.class);
+        ModelPost modelPost = new ModelPost(null,null,null,null,null,editPostId,null,mText,null,null,null,null);
+        Call<Void> call2 = userApi.updatePostByPid(Long.parseLong(editPostId),modelPost);
+        call2.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
 
-                    new Handler().postDelayed(() -> {
-                        Intent intent = new Intent(getApplicationContext(), Post.class);
-                        startActivity(intent);
-                        finish();
+                if (response.isSuccessful()){
 
-
-                    }, 2000);
                     text.setText("");
-                    update_remove.setVisibility(View.GONE);
-                    vines.setVideoURI(null);
-                    video_uri = null;
                     vines.setVisibility(View.GONE);
                     update_vine.setVisibility(View.GONE);
                     update_it.setVisibility(View.VISIBLE);
                     type.setText("Text");
                     pd.setVisibility(View.GONE);
                     update_remove.setVisibility(View.GONE);
-
-                }).addOnFailureListener(e -> {
-                    pd.setVisibility(View.GONE);
-                    Alerter.create(UpdatePost.this)
-                            .setTitle("Error")
-                            .setIcon(R.drawable.ic_check_wt)
-                            .setBackgroundColorRes(R.color.colorPrimaryDark)
-                            .setDuration(10000)
-                            .enableSwipeToDismiss()
-                            .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                            .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                            .setText(e.getMessage())
-                            .show();
-                });
-            }
-        }).addOnFailureListener(e -> {
-            pd.setVisibility(View.GONE);
-            Alerter.create(UpdatePost.this)
-                    .setTitle("Error")
-                    .setIcon(R.drawable.ic_check_wt)
-                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                    .setDuration(10000)
-                    .enableSwipeToDismiss()
-                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                    .setText(e.getMessage())
-                    .show();
-        });
-
-
-
-
-    }
-
-    private void updateNowMemeData(String mText, String uri) {
-
-        String timeStamp = String.valueOf(System.currentTimeMillis());
-        String filePathAndName = "Post/" + "Post_" + timeStamp;
-        if (!uri.equals("noImage")) {
-            StorageReference ref = FirebaseStorage.getInstance().getReference().child(filePathAndName);
-            ref.putFile(Uri.parse(uri))
-                    .addOnSuccessListener(taskSnapshot -> {
-                        Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-                        while (!uriTask.isSuccessful()) ;
-                        String downloadUri = Objects.requireNonNull(uriTask.getResult()).toString();
-                        if (uriTask.isSuccessful()) {
-                            HashMap<String, Object> hashMap = new HashMap<>();
-                            hashMap.put("id", id);
-                            hashMap.put("name", name);
-                            hashMap.put("dp", dp);
-                            hashMap.put("text", mText);
-                            hashMap.put("type", "Image");
-                            hashMap.put("meme", downloadUri);
-                            hashMap.put("vine", "noVideo");
-                            DatabaseReference dRef = FirebaseDatabase.getInstance().getReference("Posts");
-                            dRef.child(editPostId).updateChildren(hashMap)
-                                    .addOnSuccessListener(aVoid -> {
-                                        text.setText("");
-                                        meme.setImageURI(null);
-                                        image_uri = null;
-                                        type.setText("Text");
-                                        pd.setVisibility(View.GONE);
-                                        update_it.setVisibility(View.VISIBLE);
-                                        update_vine.setVisibility(View.GONE);
-                                        update_remove.setVisibility(View.GONE);
-
-                                        new Handler().postDelayed(() -> {
-                                            Intent intent = new Intent(getApplicationContext(), Post.class);
-                                            startActivity(intent);
-                                            finish();
-
-
-                                        }, 2000);
-
-                                        Alerter.create(UpdatePost.this)
-                                                .setTitle("Successful")
-                                                .setIcon(R.drawable.ic_check_wt)
-                                                .setBackgroundColorRes(R.color.colorPrimaryDark)
-                                                .setDuration(10000)
-                                                .enableSwipeToDismiss()
-                                                .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                                                .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                                                .setText("Post Updated")
-                                                .show();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        pd.setVisibility(View.GONE);
-                                        Alerter.create(UpdatePost.this)
-                                                .setTitle("Error")
-                                                .setIcon(R.drawable.ic_check_wt)
-                                                .setBackgroundColorRes(R.color.colorPrimaryDark)
-                                                .setDuration(10000)
-                                                .enableSwipeToDismiss()
-                                                .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                                                .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                                                .setText(e.getMessage())
-                                                .show();
-                                    });
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        pd.setVisibility(View.GONE);
-                        Alerter.create(UpdatePost.this)
-                                .setTitle("Error")
-                                .setIcon(R.drawable.ic_check_wt)
-                                .setBackgroundColorRes(R.color.colorPrimaryDark)
-                                .setDuration(10000)
-                                .enableSwipeToDismiss()
-                                .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                                .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                                .setText(e.getMessage())
-                                .show();
-
-                    });
-        }
-
-    }
-
-    private void updateWithMemeData(String mText, String uri) {
-
-
-        String timeStamp = String.valueOf(System.currentTimeMillis());
-        String filePathAndName = "Post/" + "Post_" + timeStamp;
-        StorageReference ref = FirebaseStorage.getInstance().getReference().child(filePathAndName);
-        ref.putFile(Uri.parse(uri)).addOnSuccessListener(taskSnapshot -> {
-
-            Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-            while (!uriTask.isSuccessful()) ;
-            String downloadUri = Objects.requireNonNull(uriTask.getResult()).toString();
-
-            if (uriTask.isSuccessful()) {
-                HashMap<String, Object> hashMap = new HashMap<>();
-                hashMap.put("id", id);
-                hashMap.put("name", name);
-                hashMap.put("dp", dp);
-                hashMap.put("text", mText);
-                hashMap.put("type", "Image");
-                hashMap.put("meme", downloadUri);
-                hashMap.put("vine", "noVideo");
-                DatabaseReference dRef = FirebaseDatabase.getInstance().getReference("Posts");
-                dRef.child(editPostId).updateChildren(hashMap).addOnSuccessListener(aVoid -> {
-                    text.setText("");
-                    meme.setImageURI(null);
-                    image_uri = null;
-                    type.setText("Text");
-                    pd.setVisibility(View.GONE);
                     update_remove.setVisibility(View.GONE);
-                    update_it.setVisibility(View.VISIBLE);
-                    update_vine.setVisibility(View.GONE);
-                    update_it.setVisibility(View.GONE);
-                    new Handler().postDelayed(() -> {
-                        Intent intent = new Intent(getApplicationContext(), Post.class);
-                        startActivity(intent);
-                        finish();
-
-
-                    }, 2000);
-
+                    onBackPressed();
                     Alerter.create(UpdatePost.this)
-                            .setTitle("Successful")
+                            .setTitle("Successfull")
                             .setIcon(R.drawable.ic_check_wt)
                             .setBackgroundColorRes(R.color.colorPrimaryDark)
                             .setDuration(10000)
                             .enableSwipeToDismiss()
-                            .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                            .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
+                            .setTitleTypeface(Objects.requireNonNull(ResourcesCompat.getFont(UpdatePost.this, R.font.bold)))
+                            .setTextTypeface(Objects.requireNonNull(ResourcesCompat.getFont(UpdatePost.this, R.font.med)))
                             .setText("Post Updated")
                             .show();
 
 
-                }).addOnFailureListener(e -> {
 
-                    pd.setVisibility(View.GONE);
-                    Alerter.create(UpdatePost.this)
-                            .setTitle("Error")
-                            .setIcon(R.drawable.ic_check_wt)
-                            .setBackgroundColorRes(R.color.colorPrimaryDark)
-                            .setDuration(10000)
-                            .enableSwipeToDismiss()
-                            .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                            .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                            .setText(e.getMessage())
-                            .show();
-                });
+
+                }
+
             }
 
-        }).addOnFailureListener(e -> {
+            @Override
+            public void onFailure(Call<Void> call, Throwable throwable) {
 
-            pd.setVisibility(View.GONE);
-            Alerter.create(UpdatePost.this)
-                    .setTitle("Error")
-                    .setIcon(R.drawable.ic_check_wt)
-                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                    .setDuration(10000)
-                    .enableSwipeToDismiss()
-                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                    .setText(e.getMessage())
-                    .show();
-        });
+                pd.setVisibility(View.GONE);
+                Alerter.create(UpdatePost.this)
+                        .setTitle("Error")
+                        .setIcon(R.drawable.ic_check_wt)
+                        .setBackgroundColorRes(R.color.colorPrimaryDark)
+                        .setDuration(10000)
+                        .enableSwipeToDismiss()
+                        .setTitleTypeface(Objects.requireNonNull(ResourcesCompat.getFont(UpdatePost.this, R.font.bold)))
+                        .setTextTypeface(Objects.requireNonNull(ResourcesCompat.getFont(UpdatePost.this, R.font.med)))
+                        .setText(throwable.getMessage())
+                        .show();
 
-    }
-
-    private void updateData(String mText) {
-
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("id", id);
-        hashMap.put("name", name);
-        hashMap.put("dp", dp);
-        hashMap.put("text", mText);
-        hashMap.put("meme", "noImage");
-        hashMap.put("type", "Text");
-        hashMap.put("vine", "noVideo");
-        DatabaseReference dRef = FirebaseDatabase.getInstance().getReference("Posts");
-        dRef.child(editPostId).updateChildren(hashMap).addOnSuccessListener(aVoid -> {
-            Alerter.create(UpdatePost.this)
-                    .setTitle("Successful")
-                    .setIcon(R.drawable.ic_check_wt)
-                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                    .setDuration(10000)
-                    .enableSwipeToDismiss()
-                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                    .setText("Post Updated")
-                    .show();
-            new Handler().postDelayed(() -> {
-                Intent intent = new Intent(getApplicationContext(), Post.class);
-                startActivity(intent);
-                finish();
-
-
-            },2000);
-
-            text.setText("");
-            vines.setVideoURI(null);
-            video_uri = null;
-            vines.setVisibility(View.GONE);
-            update_vine.setVisibility(View.GONE);
-            update_it.setVisibility(View.VISIBLE);
-            type.setText("Text");
-            pd.setVisibility(View.GONE);
-            update_remove.setVisibility(View.GONE);
-            update_remove.setVisibility(View.GONE);
-            meme.setImageURI(null);
-            image_uri = null;
-
-        }).addOnFailureListener(e -> {
-
-            pd.setVisibility(View.GONE);
-            Alerter.create(UpdatePost.this)
-                    .setTitle("Error")
-                    .setIcon(R.drawable.ic_check_wt)
-                    .setBackgroundColorRes(R.color.colorPrimaryDark)
-                    .setDuration(10000)
-                    .enableSwipeToDismiss()
-                    .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                    .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                    .setText(e.getMessage())
-                    .show();
+            }
         });
 
     }
 
     private void loadPostData(String editPostId) {
 
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Posts");
-        Query query = reference.orderByChild("pId").equalTo(editPostId);
-        query.addValueEventListener(new ValueEventListener() {
+        ModelPostRequest request = new ModelPostRequest("getPostsByPid", editPostId);
+
+        // Call API to get post by pId
+        Call<ModelPost[]> call = userApi.getPostByPid(request);
+
+        call.enqueue(new Callback<ModelPost[]>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot ds : dataSnapshot.getChildren()){
-                    editText = ""+ds.child("text").getValue();
-                    editMeme = ""+ds.child("meme").getValue();
-                    editVine = ""+ds.child("vine").getValue();
+            public void onResponse(Call<ModelPost[]> call, Response<ModelPost[]> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().length > 0) {
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("updatedPostId", editPostId);
+                    setResult(Activity.RESULT_OK, resultIntent);
+
+                    ModelPost post = response.body()[0];
+                    editText = post.getText();
+                    editMeme = post.getMeme();
+                    editVine = post.getVine();
                     update_remove.setVisibility(View.GONE);
                     update_it.setVisibility(View.VISIBLE);
                     update_vine.setVisibility(View.GONE);
                     text.setText(editText);
-                    if (!editMeme.equals("noImage")){
+                    if (!editMeme.equals("noImage")) {
                         try {
-                            Picasso.get().load(editMeme).into(meme);
+                            Glide.with(UpdatePost.this)
+                                    .load(editMeme)
+                                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                                    .into(meme);
                             meme.setVisibility(View.VISIBLE);
                             vines.setVisibility(View.GONE);
                             update_it.setVisibility(View.VISIBLE);
                             update_vine.setVisibility(View.GONE);
                             update_remove.setVisibility(View.VISIBLE);
-                        }catch (Exception ignored){
+                        } catch (Exception ignored) {
 
                         }
                     }
-
-                    if (!editVine.equals("noVideo")){
+                    if (!editVine.equals("noVideo")) {
                         try {
-                            vines.setVideoPath(editVine);
+//                            vines.setVideoPath(editVine);
+                            initializePlayer(editVine);
                             vines.setVisibility(View.VISIBLE);
                             meme.setVisibility(View.GONE);
-                            update_it.setVisibility(View.GONE);
-                            update_remove.setVisibility(View.VISIBLE);
-                            update_vine.setVisibility(View.VISIBLE);
-                        }catch (Exception ignored){
+                            update_it.setVisibility(View.VISIBLE);
+                            update_remove.setVisibility(View.INVISIBLE);
+                            update_vine.setVisibility(View.INVISIBLE);
+                        } catch (Exception ignored) {
 
                         }
                     }
 
-
+                } else {
+                    Toast.makeText(UpdatePost.this, "Failed to get post details", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
+            public void onFailure(Call<ModelPost[]> call, Throwable t) {
                 pd.setVisibility(View.GONE);
                 Alerter.create(UpdatePost.this)
                         .setTitle("Error")
@@ -781,97 +382,81 @@ public class UpdatePost extends AppCompatActivity {
                         .enableSwipeToDismiss()
                         .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
                         .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                        .setText(databaseError.getMessage())
+                        .setText(t.getMessage())
                         .show();
+                Toast.makeText(UpdatePost.this, "Network error: ", Toast.LENGTH_SHORT).show();
             }
         });
 
+
     }
 
-    private void chooseVideo() {
-        Intent intent = new Intent();
-        intent.setType("video/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(intent, PICK_VIDEO_REQUEST);
-    }
 
-    private void pickImageFromGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
-        intent.setType("image/*");
-        startActivityForResult(intent, IMAGE_PICK_CODE);
-    }
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] ==
-                    PackageManager.PERMISSION_GRANTED) {
-                Alerter.create(UpdatePost.this)
-                        .setTitle("Successful")
-                        .setIcon(R.drawable.ic_check_wt)
-                        .setBackgroundColorRes(R.color.colorPrimaryDark)
-                        .setDuration(10000)
-                        .enableSwipeToDismiss()
-                        .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                        .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                        .setText("Storage permission Allowed")
-                        .show();
-            } else {
-                Alerter.create(UpdatePost.this)
-                        .setTitle("Error")
-                        .setIcon(R.drawable.ic_error)
-                        .setBackgroundColorRes(R.color.colorPrimaryDark)
-                        .setDuration(10000)
-                        .enableSwipeToDismiss()
-                        .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-                        .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                        .setText("Storage permission is required")
-                        .show();
+
+
+    private void initializePlayer(String url) {
+        player = new ExoPlayer.Builder(this).build();
+        vines.setPlayer(player);
+
+        Uri uri = Uri.parse(url);
+        MediaSource mediaSource = buildMediaSource(uri);
+
+        player.setMediaSource(mediaSource);
+        player.setPlayWhenReady(playWhenReady);
+        player.seekTo(currentWindow, playbackPosition);
+        player.addListener(new Player.Listener() {
+            @Override
+            public void onPlayerError(PlaybackException error) {
+                Toast.makeText(UpdatePost.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        }
-
+        });
+        player.prepare();
     }
 
-    @SuppressLint("SetTextI18n")
+    private MediaSource buildMediaSource(Uri uri) {
+        DefaultHttpDataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory()
+                .setUserAgent("Ohm.app.main");
+
+        MediaItem mediaItem = new MediaItem.Builder()
+                .setUri(uri)
+                .build();
+
+        if (uri.toString().contains(".m3u8")) {
+            return new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem);
+        } else if (uri.toString().contains(".mpd")) {
+            return new DashMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem);
+        } else {
+            return new ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem);
+        }
+    }
+
+
+
+    private void releasePlayer() {
+        if (player != null) {
+            playbackPosition = player.getCurrentPosition();
+            currentWindow = player.getCurrentWindowIndex();
+            playWhenReady = player.getPlayWhenReady();
+            player.release();
+            player = null;
+        }
+    }
+
+
+
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && requestCode == IMAGE_PICK_CODE   && data != null && data.getData() != null){
-            image_uri = data.getData();
-            meme.setImageURI(image_uri);
-            update_vine.setVisibility(View.GONE);
-            update_it.setVisibility(View.VISIBLE);
-            meme.setVisibility(View.VISIBLE);
-            vines.setVisibility(View.GONE);
-            remove.setVisibility(View.VISIBLE);
-            type.setText("Image");
-        }if (image_uri == null){
-            meme.setVisibility(View.GONE);
-            update_it.setVisibility(View.VISIBLE);
-        }
-        if (requestCode == PICK_VIDEO_REQUEST && resultCode == RESULT_OK
-                && data != null && data.getData() != null) {
-            video_uri = data.getData();
-            vines.setVideoURI(video_uri);
-            update_it.setVisibility(View.GONE);
-            vines.setVisibility(View.VISIBLE);
-            meme.setVisibility(View.GONE);
-            type.setText("Video");
-            remove.setVisibility(View.VISIBLE);
-            update_vine.setVisibility(View.VISIBLE);
-        }
-        if (video_uri == null){
-            update_vine.setVisibility(View.GONE);
-            vines.setVisibility(View.VISIBLE);
-            update_it.setVisibility(View.VISIBLE);
+    protected void onPause() {
+        super.onPause();
+                releasePlayer();
 
-
-        }
     }
 
-    private String getfileExt(Uri video_uri){
-        ContentResolver contentResolver = getContentResolver();
-        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
-        return mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(video_uri));
+    @Override
+    protected void onStop() {
+        super.onStop();
+            releasePlayer();
+
+
     }
 
 }

@@ -89,34 +89,20 @@ public class Post extends AppCompatActivity {
     private static final int PICK_VIDEO_REQUEST = 1;
     ImageView meme,cancel;
     VideoView vines;
-    private File selectedImageFile;
     ConstraintLayout add_meme,add_vines,remove_lt;
     Button post, post_vine;
     EditText text;
     TextView mName,type;
-    private static final int PICK_IMAGE_REQUEST = 1;
     CircleImageView circleImageView3;
     ProgressBar pd;
     ApiService apiService;
-    FirebaseAuth firebaseAuth;
-    DatabaseReference databaseReference;
     String name, dp, id,mText, imageUrl;
     private Uri image_uri, video_uri;
     MediaController mediaController;
     private static final int IMAGE_PICK_CODE = 1000;
     private static final int PERMISSION_CODE = 1001;
-    private AmazonS3Client s3Client;
 
     private UserApiClient userApiClient;
-    ModelPost modelPost;
-    private static final int CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunk size
-
-
-    private static final String ACCESS_KEY = "DO00YCTBDL9C6C4TLC6G";
-    private static final String SECRET_KEY = "tOmmxScSauhvVeVm8F9bDG2x4nXXwaDr2OOWxPpKWGk";
-    private static final String ENDPOINT_URL = "https://upload12.blr1.digitaloceanspaces.com";
-
-    private static final String BUCKET_NAME = "upload12";
 
 
     SharedPref sharedPref;
@@ -465,7 +451,7 @@ public class Post extends AppCompatActivity {
                                 String imageUrl = jsonResponse.getString("imageUrl");
 
                                 String timeStamp = String.valueOf(System.currentTimeMillis());
-                                ModelPost modelPost = new ModelPost(dp, id, imageUrl, name, "1", timeStamp, timeStamp, mText, "noVideo", "Image", "1", "1");
+                                ModelPost modelPost = new ModelPost(dp, id, imageUrl, name, null, timeStamp, timeStamp, mText, "noVideo", "Image", null, null);
                                 userApiClient.insertModelPost(modelPost);
                                 runOnUiThread(() -> {
                                     text.setText("");

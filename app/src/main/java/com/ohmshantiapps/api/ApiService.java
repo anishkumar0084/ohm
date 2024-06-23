@@ -66,11 +66,26 @@ public interface ApiService {
     @GET("UserHandler.php")
     Call<User> fetchUser(@Query("id") int userId);
 
+    @GET("UserHandler.php")
+    Call<List<User>> getUsersByIds(@Query("ids") String ids);
+
+
+
+
     @POST("ModelPost.php")
     Call<Void> insertModelPost(@Body ModelPost modelPost);
 
     @PUT("ModelPost.php/{id}")
     Call<Void> updateModelPost(@Path("id") int postId, @Body ModelPost requestBody);
+
+    @PUT("ModelPost.php/{pId}")
+    Call<Void> updatePostByPid(@Path("pId") Long postId, @Body ModelPost requestBody);
+
+
+    @HTTP(method = "DELETE", path = "ModelPost.php", hasBody = true)
+    Call<DeleteResponse> deletePost(@Body DeleteRequestBody body);
+
+
 
     @FormUrlEncoded
     @POST("follow.php")
@@ -119,6 +134,25 @@ public interface ApiService {
 
     @GET("fetch_comments.php")
     Call<List<ModelComments>> getCommentsByPostId(@Query("pId") String pId);
+
+    @FormUrlEncoded
+    @POST("like_post.php")
+    Call<LikeResponse> toggleLike(@Field("post_id") String postId, @Field("user_id") String userId, @Field("action") String action);
+    @POST("like_post.php")
+    @FormUrlEncoded
+    Call<LikeResponse> checkLikeStatus(@Field("post_id") String postId, @Field("user_id") String userId, @Field("action") String action);
+
+    @FormUrlEncoded
+    @POST("like_post.php")
+    Call<LikeResponse> getLikes(
+            @Field("post_id") String postId,
+            @Field("action") String action
+    );
+
+
+
+
+
 
 
 }

@@ -1,16 +1,22 @@
 package com.ohmshantiapps.menu;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -20,11 +26,20 @@ import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.adapter.AdapterPost;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.ModelPostRequest;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelPost;
+import com.ohmshantiapps.post.UpdatePost;
+import com.tapadoo.alerter.Alerter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class Saved extends AppCompatActivity {
 
@@ -36,8 +51,9 @@ public class Saved extends AppCompatActivity {
     ImageView imageView3;
     AdapterPost adapterPost;
     List<ModelPost> postList;
-    List<String> mySaves;
+    ArrayList<String> mySaves;
     SharedPref sharedPref;
+    ApiService userApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +76,7 @@ public class Saved extends AppCompatActivity {
         postList = new ArrayList<>();
         adapterPost = new AdapterPost(this, postList);
         recyclerView.setAdapter(adapterPost);
+        userApi = RetrofitClient.getClient().create(ApiService.class);
         mySaved();
 
     }
@@ -72,40 +89,69 @@ public class Saved extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot snapshot1 : snapshot.getChildren()){
-                    mySaves.add(snapshot1.getKey());
-                }
-                readSave();
-            }
+                    Boolean isSaved = snapshot1.getValue(Boolean.class);
+                    if (isSaved != null && isSaved) {
+                        mySaves.add(snapshot1.getKey());
+                    } else {
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
-    }
-
-    private void readSave() {
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Posts");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                postList.clear();
-                for (DataSnapshot snapshot1 : snapshot.getChildren()){
-                    ModelPost post = snapshot1.getValue(ModelPost.class);
-                    for (String id: mySaves){
-//                        if (Objects.requireNonNull(post).getpId().equals(id)){
-//                            postList.add(post);
-//                        }
+                        handleDeletedPost(snapshot1.getKey());
                     }
                 }
-                adapterPost.notifyDataSetChanged();
-                pg.setVisibility(View.GONE);
+
+                loadPostData(mySaves);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-
+                // Handle the error if necessary
             }
         });
     }
+
+    private void handleDeletedPost(String postId) {
+
+    }
+
+
+    private void loadPostData(ArrayList<String> postIds) {
+        for (String postId : postIds) {
+            ModelPostRequest request = new ModelPostRequest("getPostsByPid", postId);
+
+            // Call API to get post by pId
+            Call<ModelPost[]> call = userApi.getPostByPid(request);
+
+            call.enqueue(new Callback<ModelPost[]>() {
+                @Override
+                public void onResponse(Call<ModelPost[]> call, Response<ModelPost[]> response) {
+                    if (response.isSuccessful() && response.body() != null && response.body().length > 0) {
+                        ModelPost post = response.body()[0];
+                        postList.add(post);
+                        adapterPost.notifyDataSetChanged();
+                         pg.setVisibility(View.GONE);
+
+
+                    } else {
+                        Toast.makeText(Saved.this, "Failed to get post details", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ModelPost[]> call, Throwable t) {
+                    Alerter.create(Saved.this)
+                            .setTitle("Error")
+                            .setIcon(R.drawable.ic_check_wt)
+                            .setBackgroundColorRes(R.color.colorPrimaryDark)
+                            .setDuration(10000)
+                            .enableSwipeToDismiss()
+                            .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
+                            .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
+                            .setText(t.getMessage())
+                            .show();
+                    Toast.makeText(Saved.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+
 }

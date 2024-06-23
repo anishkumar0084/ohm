@@ -3,7 +3,6 @@ package com.ohmshantiapps.menu;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -12,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -21,16 +19,13 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.RetrofitClient;
+import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.user.MyFollowing;
 import com.ohmshantiapps.welcome.IntroLast;
-import com.tapadoo.alerter.Alerter;
 
 import java.util.Objects;
 
@@ -38,6 +33,7 @@ import java.util.Objects;
 public class Menu extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
+    private String baseUrl = "http://68.183.245.154/user/";
     private SharedPreferences sharedPreferences;
     FirebaseUser firebaseUser;
     ConstraintLayout logout,save,followers,following,invite,policy,delete,email,password;
@@ -47,6 +43,8 @@ public class Menu extends AppCompatActivity {
     private static final String USER_ID_KEY = "userId";
 
     ImageView imageView3;
+    ApiService apiService;
+    String profileUrl;
     String mEmail;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +73,7 @@ public class Menu extends AppCompatActivity {
             intent.putExtra("title", "followers");
             startActivity(intent);
         });
+        apiService = RetrofitClient.getClient().create(ApiService.class);
         policy.setOnClickListener(v -> {
             Intent intent = new Intent(Menu.this, Policy.class);
             startActivity(intent);
@@ -153,12 +152,11 @@ public class Menu extends AppCompatActivity {
 //            }
 //        });
 
-        email.setVisibility(View.GONE);
         password.setVisibility(View.GONE);
 
         email.setOnClickListener(v -> {
-            Intent intent = new Intent(Menu.this, ChangeEmail.class);
-            startActivity(intent);
+
+           shareProfileLink();
         });
         password.setOnClickListener(v -> {
             Intent intent = new Intent(Menu.this, ChangePassword.class);
@@ -168,7 +166,20 @@ public class Menu extends AppCompatActivity {
 
 
 
+
     }
+    private void shareProfileLink() {
+        SessionManager sessionManager = new SessionManager(this);
+
+        String  userId =sessionManager.getUserId();
+
+        String shareableLink = baseUrl + userId;
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, "Check out this profile: " + shareableLink);
+        startActivity(Intent.createChooser(shareIntent, "Share Profile via"));
+    }
+
     private void showReAuthenticationDialog() {
         // Create an AlertDialog to enter the user's password
         AlertDialog.Builder reAuthBuilder = new AlertDialog.Builder(Menu.this);

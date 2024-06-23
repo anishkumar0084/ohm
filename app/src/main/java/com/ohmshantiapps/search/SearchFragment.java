@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -49,8 +50,8 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
     AdapterPost adapterPost;
     List<ModelPost> postList;
 
-    private static final int TOTAL_ITEMS_TO_LOAD = 7;
     private int mCurrenPage = 1;
+
 
     ApiService userApi;
 
@@ -70,17 +71,6 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
         vines_rv = view.findViewById(R.id.vines_rv);
         userApi = RetrofitClient.getClient().create(ApiService.class);
 
-        posts_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getAllPost();
-                }
-            }
-        });
         likes_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -146,9 +136,11 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
         imageView3.setOnClickListener(v -> bottomSheetDialog.show());
 
 
-        //Post
+
         postList = new ArrayList<>();
-        getAllPosts();
+
+
+
 
         //Likes
         postList = new ArrayList<>();
@@ -168,6 +160,8 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
 
         //Vine
         postList = new ArrayList<>();
+
+        getAllPost();
 
         createBottomSheetDialog();
         return view;
@@ -192,8 +186,7 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
             bottomSheetDialog.setContentView(view);
         }
     }
-
-    private void getAllPosts() {
+    private void getAllPost() {
         Call<List<ModelPost>> postsCall = userApi.getAllPosts(); // Modify API call to get all posts
         postsCall.enqueue(new Callback<List<ModelPost>>() {
             @Override
@@ -217,35 +210,14 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
 
             @Override
             public void onFailure(Call<List<ModelPost>> call, Throwable t) {
-                Toast.makeText(getActivity(), "Currently NO post available: ", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 // Handle failure
             }
         });
     }
 
-//    private void getAllPost() {
-//        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-//        Query q = ref.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-//        q.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                postList.clear();
-//                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-//                    ModelPost modelPost = ds.getValue(ModelPost.class);
-//                    postList.add(modelPost);
-//                }
-//                adapterPost = new AdapterPost(getActivity(), postList);
-//                posts_rv.setAdapter(adapterPost);
-//                pg.setVisibility(View.GONE);
-//                adapterPost.notifyDataSetChanged();
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
+
+
 //    private void getLikePost() {
 //        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
 //        Query q = ref.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);

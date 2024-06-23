@@ -1,10 +1,15 @@
 package com.ohmshantiapps.post;
 
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
+
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,19 +23,29 @@ import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.adapter.AdapterUsers;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.LikeResponse;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelUser;
+import com.ohmshantiapps.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class PostLikedBy extends AppCompatActivity {
     SharedPref sharedPref;
     String postId;
     private RecyclerView recyclerView;
-    private List<ModelUser> userList;
+    private List<User> userList;
     ProgressBar pg;
     private AdapterUsers adapterUsers;
     ImageView imageView3;
+
+    ApiService apiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,43 +62,69 @@ public class PostLikedBy extends AppCompatActivity {
         postId = intent.getStringExtra("postId");
         recyclerView = findViewById(R.id.users);
        userList = new ArrayList<>();
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Likes");
-        reference.child(postId).addValueEventListener(new ValueEventListener() {
+
+        apiService = RetrofitClient.getClient().create(ApiService.class);
+
+        Call<LikeResponse> call = apiService.getLikes(postId, "get_likes");
+
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-userList.clear();
-for (DataSnapshot ds: snapshot.getChildren()){
-    String hisUid = ""+ ds.getRef().getKey();
-    getUsers(hisUid);
-}
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LikeResponse likeResponse = response.body();
+                    List<String> userIds = likeResponse.getUserIds();
+                    getUsers(userIds);
+
+
+
+
+
+
+                } else {
+                    Log.e(TAG, "Failed to get likes. Response code: " + response.code());
+                }
+
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
 
             }
         });
+
     }
 
-    private void getUsers(String hisUid) {
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Users");
-        ref.orderByChild("id").equalTo(hisUid)
-                .addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        for (DataSnapshot ds: snapshot.getChildren()){
-                            ModelUser modelUser = ds.getValue(ModelUser.class);
-                            userList.add(modelUser);
-                        }
-//                        adapterUsers = new AdapterUsers(PostLikedBy.this, userList);
-                        recyclerView.setAdapter(adapterUsers);
-                        pg.setVisibility(View.GONE);
-                    }
+    private void getUsers(List<String> hisUid) {
+        String ids = TextUtils.join(",", hisUid);
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+        Call<List<User>> call=apiService.getUsersByIds(ids);
 
-                    }
-                });
+        call.enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful()) {
+                    List<User> users = response.body();
+                    adapterUsers = new AdapterUsers(PostLikedBy.this, users);
+                    recyclerView.setAdapter(adapterUsers);
+                    pg.setVisibility(View.GONE);
+
+                } else {
+                    Toast.makeText(PostLikedBy.this, "No users found", Toast.LENGTH_SHORT).show();
+                    pg.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable throwable) {
+                Toast.makeText(PostLikedBy.this, "Failed to fetch users: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+
+
+            }
+        });
+
+
+
+
+
     }
 }
