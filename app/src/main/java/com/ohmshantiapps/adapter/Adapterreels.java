@@ -13,16 +13,16 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ohmshantiapps.R;
-import com.ohmshantiapps.model.reels; // Ensure you import the correct package
+import com.ohmshantiapps.model.ModelPost;
 
 import java.util.List;
 
 public class Adapterreels extends RecyclerView.Adapter<Adapterreels.ReelViewHolder> {
 
     private Context context;
-    private List<reels> reelList; // Using the reels class
+    private List<ModelPost> reelList; // Using the reels class
 
-    public  Adapterreels (Context context, List<reels> reelList) {
+    public  Adapterreels (Context context, List<ModelPost> reelList) {
         this.context = context;
         this.reelList = reelList;
     }
@@ -36,15 +36,15 @@ public class Adapterreels extends RecyclerView.Adapter<Adapterreels.ReelViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ReelViewHolder holder, int position) {
-        reels reel = reelList.get(position); // Using the reels class
+        ModelPost reel = reelList.get(position); // Using the reels class
 
-        holder.videoView.setVideoURI(Uri.parse(reel.getVideoUrl()));
+        holder.videoView.setVideoURI(Uri.parse(reel.getVine()));
         holder.videoView.start();
 
-        holder.userProfilePhoto.setImageResource(reel.getUserProfilePhoto());
-        holder.usedAudio.setImageResource(reel.getUsedAudio());
-        holder.userName.setText(reel.getUserName());
-        holder.description.setText(reel.getDescription());
+//        holder.userProfilePhoto.setImageResource(reel.getDp());
+//        holder.usedAudio.setImageResource(reel.getUsedAudio());
+        holder.userName.setText(reel.getName());
+        holder.description.setText(reel.getText());
 
         holder.likeButton.setOnClickListener(v -> {
             // Handle like button click

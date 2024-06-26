@@ -49,9 +49,7 @@ public class SignUp extends AppCompatActivity {
     private ProgressBar mProgressBar;
     private ApiService mApiService;
     private FirebaseAuth mAuth;
-    DatabaseReference reference;
     TextView textView2;
-    ApiService userApi;
 
 
     @Override
@@ -108,64 +106,12 @@ public class SignUp extends AppCompatActivity {
             return;
         }
 
-        register_btn(email,name,password);
+        mUser(name,email,password);
+
 
 
     }
-
-
-
-
-    private void showErrorAlert(String message) {
-        Alerter.create(SignUp.this)
-                .setTitle("Error")
-                .setIcon(R.drawable.ic_error)
-                .setBackgroundColorRes(R.color.colorPrimary)
-                .setDuration(10000)
-                .enableSwipeToDismiss()
-                .setText(message)
-                .show();
-    }
-    private void register_btn(final String email, final String name, String password) {
-
-        mAuth.createUserWithEmailAndPassword(email,password).addOnCompleteListener(this, task -> {
-            if (task.isSuccessful()){
-
-                FirebaseUser firebaseUser = mAuth.getCurrentUser();
-                String userid = Objects.requireNonNull(firebaseUser).getUid();
-
-                reference = FirebaseDatabase.getInstance().getReference().child("Users").child(userid);
-
-                HashMap<String, Object> hashMap = new HashMap<>();
-                hashMap.put("id", userid);
-                hashMap.put("name", name);
-                hashMap.put("email", email);
-                hashMap.put("username", "");
-                hashMap.put("bio", "");
-                hashMap.put("verified","");
-                hashMap.put("location","");
-                hashMap.put("status","online");
-                hashMap.put("typingTo","noOne");
-                hashMap.put("link","");
-                hashMap.put("photo", "https://firebasestorage.googleapis.com/v0/b/memespace-34a96.appspot.com/o/avatar.jpg?alt=media&token=8b875027-3fa4-4da4-a4d5-8b661d999472");
-                reference.setValue(hashMap).addOnCompleteListener(task1 -> {
-                    if (task1.isSuccessful()) {
-
-                        mUser(name,email,password,userid);
-
-
-                    }
-                });
-            }else {
-                String msg = Objects.requireNonNull(task.getException()).getMessage();
-                showErrorAlert("Error: " +Objects.requireNonNull(msg));
-
-                mProgressBar.setVisibility(View.INVISIBLE);
-            }
-        });
-
-    }
-    private void mUser(String name,String email,String password,String userid){
+    private void mUser(String name,String email,String password){
 
         // Make registration request
         Call<JsonElement> call = mApiService.registerUser(name, email, password);
@@ -195,10 +141,10 @@ public class SignUp extends AppCompatActivity {
 
 
                         } else {
-                            showErrorAlert("Registration failed: Invalid user ID or token received");
+                            showErrorAlert("Registration failed. Please try again.");
                         }
                     } else {
-                        showErrorAlert("Registration failed: No user ID or token received");
+                        showErrorAlert("Registration failed. Please try again.");
                     }
                 } else {
                     // Registration failed
@@ -210,11 +156,21 @@ public class SignUp extends AppCompatActivity {
             public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
                 mProgressBar.setVisibility(View.INVISIBLE);
                 // Handle network error
-                showErrorAlert("Registration failed: " + t.getMessage());
+                showErrorAlert("Registration failed. Please try again.");
             }
         });
 
 
+    }
+    private void showErrorAlert(String message) {
+        Alerter.create(SignUp.this)
+                .setTitle("Error")
+                .setIcon(R.drawable.ic_error)
+                .setBackgroundColorRes(R.color.colorPrimary)
+                .setDuration(10000)
+                .enableSwipeToDismiss()
+                .setText(message)
+                .show();
     }
 
 }
