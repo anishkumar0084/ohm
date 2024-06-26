@@ -101,6 +101,7 @@ dependencies {
     implementation ("com.squareup.okhttp3:okhttp:4.9.0")
     implementation ("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation ("com.amazonaws:aws-android-sdk-s3:2.16.12")
+    implementation ("com.github.chrisbanes:PhotoView:2.3.0")
 
 
 

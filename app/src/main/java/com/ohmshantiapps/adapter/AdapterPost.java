@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.util.Log;
 import android.view.Gravity;
@@ -27,12 +28,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 //import com.google.android.ads.nativetemplates.TemplateView;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
@@ -48,6 +54,7 @@ import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.Adpref;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.CommentCountResponse;
 import com.ohmshantiapps.api.DeleteRequestBody;
 import com.ohmshantiapps.api.DeleteResponse;
 import com.ohmshantiapps.api.LikeResponse;
@@ -97,7 +104,6 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     private boolean isLiked = false;
 
     private String userId;
-    private final DatabaseReference viewRef;
     private final DatabaseReference postsRef1;
     boolean mProcessLike = false;
     boolean mProcessView = false;
@@ -107,7 +113,6 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     public AdapterPost(Context context, List<ModelPost> postList) {
         this.context = context;
         this.postList = postList;
-        viewRef = FirebaseDatabase.getInstance().getReference().child("Views");
         postsRef1 = FirebaseDatabase.getInstance().getReference().child("Posts");
          apiService = RetrofitClient.getClient().create(ApiService.class);
 
@@ -167,16 +172,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             holder.constraintLayout9.setVisibility(View.GONE);
         }
 
-        if (!(comment ==null)){
 
-        if (comment.equals("0")) {
-            holder.commentNo.setText("Comment");
-
-        } else {
-
-            holder.commentNo.setText(comment);
-        }
-        }
 
         HashTagHelper mTextHashTagHelper = HashTagHelper.Creator.create(context.getResources().getColor(R.color.colorPrimary), hashTag -> {
             Intent intent1 = new Intent(context, Search.class);
@@ -219,16 +215,13 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                                 intent.putExtra("postIds", postId);
                                 context.startActivity(intent);
                             } else {
-                                postsRef1.child(postId).child("pViews").setValue("" + (pViews1 + 1));
                                 mProcessView = false;
                                 Intent intent = new Intent(context, PostDetails.class);
                                 intent.putExtra("postId", pId);
                                 intent.putExtra("postIds", "0");
-
-                                viewRef.child(postId).child(userId).setValue("viewed");
                                 context.startActivity(intent);
 
-                                addToHisNotification(""+id,""+pId,"Viewed  your post");
+//                                addToHisNotification(""+id,""+pId,"Viewed  your post");
                             }
                         }
                     }
@@ -256,12 +249,14 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
 
 
-        //DP
-        try {
-            Picasso.get().load(dp).placeholder(R.drawable.avatar).into(holder.pDp);
-        } catch (Exception ignored) {
+        RequestOptions requestOptions = new RequestOptions()
+                .placeholder(R.drawable.avatar)
+                .diskCacheStrategy(DiskCacheStrategy.ALL);
 
-        }
+        Glide.with(context)
+                .load(dp)
+                .apply(requestOptions)
+                .into(holder.pDp);
 
 
         //Post Image
@@ -269,44 +264,33 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             holder.pMeme.setVisibility(View.GONE);
         } else {
 
-//            Glide.with(context)
-//                    .load(meme)
-//                    .into(holder.pMeme);
+            RequestOptions requestOptions1 = new RequestOptions()
+                    .placeholder(R.drawable.avatar)  // Placeholder with loading animation
+                    .diskCacheStrategy(DiskCacheStrategy.ALL);  // Cache strategy for better performance
 
-
-            // Create OkHttpClient instance with custom timeouts
-            OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .connectTimeout(300, TimeUnit.SECONDS)
-                    .readTimeout(300, TimeUnit.SECONDS)
-                    .build();
-
-
-            // Create Picasso instance with custom OkHttpClient
-            Picasso picasso = new Picasso.Builder(context)
-                    .downloader(new OkHttp3Downloader(okHttpClient))
-                    .build();
-
-
-//            picasso.load(meme).into(holder.pMeme);
-
-//
-
-
-            // Load image with Picasso
-            picasso.load(meme)
-                    .error(R.drawable.avatar) // Placeholder image in case of error
-                    .into(holder.pMeme, new Callback() {
+            Glide.with(context)
+                    .load(meme)
+                    .apply(requestOptions1)
+                    .into(new CustomTarget<Drawable>() {
                         @Override
-                        public void onSuccess() {
-                            // Image loaded successfully
+                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                            holder.pMeme.setImageDrawable(resource);
                         }
 
                         @Override
-                        public void onError(Exception e) {
-                            Toast.makeText(context, ""+e.getMessage(), Toast.LENGTH_SHORT).show();
-                            // Handle error, e.g., retry logic
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // This method is called when the load is cancelled or the target is cleared
+                            holder.pMeme.setImageDrawable(placeholder);
+                        }
+
+                        @Override
+                        public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            // If the load fails, we can still show the placeholder (loading animation)
+                            holder.pMeme.setImageDrawable(requestOptions.getPlaceholderDrawable());
                         }
                     });
+
+//
 
         }
 
@@ -361,37 +345,21 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                     int pViews = Integer.parseInt(postList.get(position).getpViews());
                     mProcessView = true;
                     String postId = String.valueOf(postList.get(position).getpId());
-                    viewRef.addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            if (mProcessView) {
-                                if (dataSnapshot.child(postId).hasChild(userId)) {
-                                    mProcessView = false;
-                                    Intent intent = new Intent(context, PostDetails.class);
-                                    intent.putExtra("postId", pId);
-                                    intent.putExtra("postIds", id);
 
-
-                                    context.startActivity(intent);
-                                } else {
-                                    postsRef1.child(postId).child("pViews").setValue("" + (pViews + 1));
-                                    mProcessView = false;
-                                    Intent intent = new Intent(context, PostDetails.class);
-                                    intent.putExtra("postId", pId);
-                                    viewRef.child(postId).child(userId).setValue("viewed");
-                                    intent.putExtra("postIds", "0");
-
-                                    context.startActivity(intent);
-                                    addToHisNotification(""+id,""+pId,"Viewed  your post");
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        }
-                    });
+                    if (postId.equals(userId)) {
+                        mProcessView = false;
+                        Intent intent = new Intent(context, PostDetails.class);
+                        intent.putExtra("postId", pId);
+                        intent.putExtra("postIds", postId);
+                        context.startActivity(intent);
+                    } else {
+                        mProcessView = false;
+                        Intent intent = new Intent(context, PostDetails.class);
+                        intent.putExtra("postId", pId);
+                        intent.putExtra("postIds", "0");
+                        context.startActivity(intent);
+//                        addToHisNotification(""+id,""+pId,"Viewed  your post");
+                    }
 
 
                 }
@@ -422,11 +390,9 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                     int pViews = Integer.parseInt(postList.get(position).getpViews());
                     mProcessView = true;
                     String postId = String.valueOf(postList.get(position).getpId());
-                    viewRef.addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
                             if (mProcessView) {
-                                if (dataSnapshot.child(postId).hasChild(userId)) {
+                                if (postId.equals(id)) {
                                     mProcessView = false;
                                     Intent intent = new Intent(context, PostDetails.class);
                                     intent.putExtra("postId", pId);
@@ -438,19 +404,12 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                                     mProcessView = false;
                                     Intent intent = new Intent(context, PostDetails.class);
                                     intent.putExtra("postId", pId);
-                                    viewRef.child(postId).child(userId).setValue("viewed");
                                     context.startActivity(intent);
                                     intent.putExtra("postIds", "0");
 //                                    addToHisNotification(""+id,""+pId,"Viewed  your post");
                                 }
                             }
-                        }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                        }
-                    });
 
 
                 }
@@ -467,6 +426,42 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         }));
 
         noLike(position,holder);
+        noComment(position,holder);
+
+    }
+
+    private void noComment(int position,MyHolder holder){
+        String postId = String.valueOf(postList.get(position).getpId());
+
+        Call<CommentCountResponse> call=apiService.getCommentCount(postId,"true");
+        call.enqueue(new retrofit2.Callback<CommentCountResponse>() {
+            @Override
+            public void onResponse(Call<CommentCountResponse> call, Response<CommentCountResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int commentCount = response.body().getCommentCount();
+
+                        if (commentCount==0) {
+                            holder.commentNo.setText("Comment");
+
+                        } else {
+
+                            holder.commentNo.setText(formatViews(commentCount));
+                        }
+
+
+
+                } else {
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CommentCountResponse> call, Throwable throwable) {
+
+            }
+        });
+
+
+
 
     }
 
@@ -610,23 +605,23 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
     private void setViews(MyHolder holder, String postKey) {
-        viewRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.child(postKey).hasChild(userId)){
-
-                    holder.eye.setImageResource(R.drawable.ic_eyed);
-
-                }else {
-                    holder.eye.setImageResource(R.drawable.ic_eye);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
+//        viewRef.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                if (dataSnapshot.child(postKey).hasChild(userId)){
+//
+//                    holder.eye.setImageResource(R.drawable.ic_eyed);
+//
+//                }else {
+//                    holder.eye.setImageResource(R.drawable.ic_eye);
+//                }
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
 
     }
 

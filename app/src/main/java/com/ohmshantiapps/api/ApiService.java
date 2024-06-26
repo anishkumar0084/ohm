@@ -135,6 +135,17 @@ public interface ApiService {
     @GET("fetch_comments.php")
     Call<List<ModelComments>> getCommentsByPostId(@Query("pId") String pId);
 
+    @GET("fetch_comments.php")
+    Call<CommentCountResponse> getCommentCount(@Query("pId") String pId, @Query("count") String count);
+
+    @GET("fetch_comments.php")
+    Call<ResponseBody> deleteComment(@Query("cId") String cId);
+
+    @GET("fetch_comments.php")
+    Call<ResponseBody> editComment(@Query("cId") String cId, @Query("content") String content);
+
+
+
     @FormUrlEncoded
     @POST("like_post.php")
     Call<LikeResponse> toggleLike(@Field("post_id") String postId, @Field("user_id") String userId, @Field("action") String action);

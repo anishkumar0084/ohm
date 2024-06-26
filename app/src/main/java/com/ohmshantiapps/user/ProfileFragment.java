@@ -327,7 +327,7 @@ public class ProfileFragment extends Fragment {
                             Glide.with(getActivity())
                                     .load(photoUrl)
                                     .apply(new RequestOptions()
-                                            .error(R.drawable.avatar))  // Set the error placeholder
+                                            )  // Set the error placeholder
                                     .into(circularImageView);
                         } catch (Exception e) {
                             Glide.with(getActivity())

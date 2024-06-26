@@ -556,6 +556,7 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
             @Override
             public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    loadComments();
                     Log.d(TAG, "Response: " + response.body().getMessage());
                     textBox.setText("");
 //                    updateCommentCount();
