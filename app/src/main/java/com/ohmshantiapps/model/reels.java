@@ -1,4 +1,4 @@
-package com.ohmshantiapps;
+package com.ohmshantiapps.model;
 public class reels {
     private String videoUrl;
     private int userProfilePhoto;

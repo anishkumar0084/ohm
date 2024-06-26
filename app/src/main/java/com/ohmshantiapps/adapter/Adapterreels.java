@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ohmshantiapps.R;
-import com.ohmshantiapps.reels; // Ensure you import the correct package
+import com.ohmshantiapps.model.reels; // Ensure you import the correct package
 
 import java.util.List;
 
