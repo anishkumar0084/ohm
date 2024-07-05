@@ -1,5 +1,6 @@
 package com.ohmshantiapps.user;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -46,11 +47,10 @@ import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.notifications.Data;
 import com.ohmshantiapps.notifications.Sender;
 import com.ohmshantiapps.notifications.Token;
-import com.ohmshantiapps.shareChat.Chat;
 import com.tapadoo.alerter.Alerter;
 
 import org.json.JSONException;
@@ -73,6 +73,8 @@ public class UserProfile extends AppCompatActivity {
     TextView mUsername, mName,noFollowers,noFollowing,noPost;
     CircleImageView circularImageView;
     TextView  bio, link, location;
+    String receiver_id = "";
+
     RelativeLayout bio_layout, web_layout,location_layout,followingly,followersly;
     ProgressBar pb;
     ConstraintLayout constraintLayout;
@@ -94,6 +96,7 @@ public class UserProfile extends AppCompatActivity {
     private int mCurrenPage = 1;
     UserApiClient userApiClient;
     ApiService apiService;
+    Context context;
 
 
     @Override
@@ -105,18 +108,10 @@ public class UserProfile extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_profile);
         recyclerView = findViewById(R.id.postView);
+        context = this;
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
-        //Firebase
-//        FirebaseAuth mAuth = FirebaseAuth.getInstance();
-        //Intent
          hisUid = getIntent().getStringExtra("hisUid");
-         userIdk = getIntent().getStringExtra("userid");
-
-//        firebaseDatabase = FirebaseDatabase.getInstance();
-//        DatabaseReference mDatabase = firebaseDatabase.getReference("Users");
-//        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-//        userId = Objects.requireNonNull(mAuth.getCurrentUser()).getUid();
 
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         //view
@@ -144,13 +139,7 @@ public class UserProfile extends AppCompatActivity {
         location_layout = findViewById(R.id.location_layout);
         NestedScrollView cv = findViewById(R.id.cv);
 
-        message.setOnClickListener(v -> {
-            Intent intent = new Intent(UserProfile.this, Chat.class);
-            intent.putExtra("hisUid", hisUid);
-            intent.putExtra("userid", userIdk);
-            startActivity(intent);
 
-        });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -172,6 +161,10 @@ public class UserProfile extends AppCompatActivity {
         userId =sessionManager.getUserId();
 
         int is=Integer.parseInt(hisUid);
+        message.setOnClickListener(v -> {
+
+
+        });
 
 
 
@@ -180,11 +173,12 @@ public class UserProfile extends AppCompatActivity {
 
 
 
-        userApiClient.fetchUser(is, new Callback<User>() {
+
+        userApiClient.fetchUser(is, new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, retrofit2.Response<User> response) {
+            public void onResponse(Call<Users> call, retrofit2.Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         // Extract and display the user's name and email
                         String userName = user.getName();
@@ -194,6 +188,7 @@ public class UserProfile extends AppCompatActivity {
                         String bi = user.getBio();
                         String lik = user.getLink();
                         String loc = user.getLocation();
+
 
 
                         mName.setText(userName);
@@ -257,123 +252,29 @@ public class UserProfile extends AppCompatActivity {
 
 
                         // Show a toast message with the user's name
-//                        Toast.makeText(requireContext(), "User Name: " + userName, Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(requireContext(), "Users Name: " + userName, Toast.LENGTH_SHORT).show();
                     } else {
                         // Show a toast message indicating that the user was not found
 //                        showFetchError();
                     }
                 } else {
                     // Show a toast message indicating the failure
-                    Toast.makeText(UserProfile.this, "Failed to fetch user: " + response.message(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(UserProfile.this, "Failed to fetch user: ", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
 
-
-                // Show a toast message indicating the failure
                 showError(t);
-//                Toast.makeText(UserProfile.this, "Failed to fetch user: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+
             }
         });
 
 
 
-
-//        Query query = mDatabase.orderByChild("id").equalTo(hisUid);
-//        query.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                for (DataSnapshot ds: dataSnapshot.getChildren()) {
-//
-//                    String name = ""+ ds.child("name").getValue();
-//                    String username = ""+ ds.child("username").getValue();
-//                    String photo = ""+ ds.child("photo").getValue();
-//
-//                    String bi = ""+ ds.child("bio").getValue();
-//                    String lik = ""+ ds.child("link").getValue();
-//                    String loc = ""+ ds.child("location").getValue();
-//
-//                    mName.setText(name);
-//                    mUsername.setText(username);
-//                    bio.setText(bi);
-//                    link.setText(lik);
-//                    location.setText(loc);
-//
-//                    followingly.setOnClickListener(v -> {
-//                        Intent intent = new Intent(UserProfile.this, FollowersList.class);
-//                        intent.putExtra("id", hisUid);
-//                        intent.putExtra("title", "following");
-//                        startActivity(intent);
-//                    });
-//
-//                    followersly.setOnClickListener(v -> {
-//                        Intent intent = new Intent(UserProfile.this, FollowersList.class);
-//                        intent.putExtra("id", hisUid);
-//                        intent.putExtra("title", "followers");
-//                        startActivity(intent);
-//                    });
-//
-//                    try {
-//                        Picasso.get().load(photo).into(circularImageView);
-//                    }
-//                    catch (Exception e ){
-//                        Picasso.get().load(R.drawable.avatar).into(circularImageView);
-//                    }
-//
-//                    String ed_text = bio.getText().toString().trim();
-//                    if (ed_text.length() > 0) {
-//                        bio_layout.setVisibility(View.VISIBLE);
-//
-//                    } else {
-//                        bio_layout.setVisibility(View.GONE);
-//                    }
-//                    String ed_link = link.getText().toString().trim();
-//
-//                    if (ed_link.length() > 0) {
-//                        web_layout.setVisibility(View.VISIBLE);
-//
-//                    } else {
-//                        web_layout.setVisibility(View.GONE);
-//                    }
-//
-//                    String ed_location = location.getText().toString().trim();
-//
-//                    if (ed_location.length() > 0) {
-//                        location_layout.setVisibility(View.VISIBLE);
-//
-//                    } else {
-//                        location_layout.setVisibility(View.GONE);
-//                    }
-//
-//                    pb.setVisibility(View.GONE);
-//                    constraintLayout.setVisibility(View.VISIBLE);
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//                Alerter.create(UserProfile.this)
-//                        .setTitle("Error")
-//                        .setIcon(R.drawable.ic_error)
-//                        .setBackgroundColorRes(R.color.colorPrimary)
-//                        .setDuration(10000)
-//                        .enableSwipeToDismiss()
-//                        .setText(databaseError.getMessage())
-//                        .show();
-//                pb.setVisibility(View.GONE);
-//            }
-//        });
-//
-
         follow.setOnClickListener(v -> {
-
             followUser( Integer.parseInt(userId),is);
-//                FirebaseDatabase.getInstance().getReference().child("Follow").child(firebaseUser.getUid())
-//                        .child("Following").child(hisUid).setValue(true);
-//                FirebaseDatabase.getInstance().getReference().child("Follow").child(hisUid)
-//                        .child("Followers").child(firebaseUser.getUid()).setValue(true);
                 follow.setVisibility(View.GONE);
                 following.setVisibility(View.VISIBLE);
             addToHisNotification(""+userIdk);
@@ -443,6 +344,9 @@ public class UserProfile extends AppCompatActivity {
         postList= new ArrayList<>();
         loadPost();
     }
+
+
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -460,7 +364,7 @@ public class UserProfile extends AppCompatActivity {
             public void onResponse(Call<Void> call, retrofit2.Response<Void> response) {
                 if (response.isSuccessful()) {
                     // Handle successful follow response
-                    Toast.makeText(UserProfile.this, "User followed successfully.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(UserProfile.this, "Users followed successfully.", Toast.LENGTH_SHORT).show();
                 } else {
                     // Handle unsuccessful response
                     Toast.makeText(UserProfile.this, "Oops! An error occurred.", Toast.LENGTH_SHORT).show();

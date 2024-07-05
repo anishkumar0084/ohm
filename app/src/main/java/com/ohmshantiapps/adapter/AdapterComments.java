@@ -16,7 +16,6 @@ import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -24,13 +23,10 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.api.ApiService;
-import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelComments;
-import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.user.MediaView;
 import com.ohmshantiapps.user.UserProfile;
 import com.ohmshantiapps.welcome.GetTimeAgo;
@@ -39,7 +35,6 @@ import com.pedromassango.doubleclick.DoubleClickListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
-import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import retrofit2.Call;
@@ -321,11 +316,11 @@ public class AdapterComments extends RecyclerView.Adapter<AdapterComments.MyHold
 
     private void getUserInfo(MyHolder holder, String id) {
 
-        userApiClient.fetchUser(Integer.parseInt(id), new Callback<User>() {
+        userApiClient.fetchUser(Integer.parseInt(id), new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         // Extract and display the user's name and email
                         String userName = user.getName();
@@ -334,10 +329,10 @@ public class AdapterComments extends RecyclerView.Adapter<AdapterComments.MyHold
                         Picasso.get().load(photoUrl).placeholder(R.drawable.avatar).into(holder.mDp);
 
                         // Show a toast message with the user's name
-//                        Toast.makeText(requireContext(), "User Name: " + userName, Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(requireContext(), "Users Name: " + userName, Toast.LENGTH_SHORT).show();
                     } else {
                         // Show a toast message indicating that the user was not found
-                        Toast.makeText(context, "User not found", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Users not found", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     // Show a toast message indicating the failure
@@ -346,7 +341,7 @@ public class AdapterComments extends RecyclerView.Adapter<AdapterComments.MyHold
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 // Show a toast message indicating the failure
                 Toast.makeText(context, "Failed to fetch user: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }

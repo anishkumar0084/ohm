@@ -326,7 +326,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         adpref = new Adpref(context);
         if (adpref.loadAdsModeState()){
             if (!vine.equals("noVideo")){
-                holder.ad.setVisibility(View.VISIBLE);
+//                holder.ad.setVisibility(View.VISIBLE);
             }
         }
 
@@ -758,11 +758,11 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                         .setTitle("Delete Post")
                         .setMessage("Are you sure you want to delete this post?")
                         .setPositiveButton(android.R.string.yes, (dialog, which) -> {
-                            // User confirmed to delete the post
+                            // Users confirmed to delete the post
                             beginDelete(pId, meme, vine, position);
                         })
                         .setNegativeButton(android.R.string.no, (dialog, which) -> {
-                            // User cancelled the deletion
+                            // Users cancelled the deletion
                             dialog.dismiss();
                         })
                         .setIcon(android.R.drawable.ic_dialog_alert)
@@ -1097,7 +1097,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         final RelativeLayout share;
         final RelativeLayout view_ly;
         final RelativeLayout video_share;
-        final RelativeLayout ad;
+//        final RelativeLayout ad;
         final ImageView pause;
         final ProgressBar load;
         final ConstraintLayout constraintLayout9;
@@ -1110,7 +1110,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             eye = itemView.findViewById(R.id.eye);
             pMeme = itemView.findViewById(R.id.imageView2);
             pName = itemView.findViewById(R.id.name);
-            ad = itemView.findViewById(R.id.ad);
+//            ad = itemView.findViewById(R.id.ad);
             pType = itemView.findViewById(R.id.username);
             likeNo = itemView.findViewById(R.id.likeNo);
             commentNo = itemView.findViewById(R.id.commentNo);

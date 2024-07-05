@@ -2,6 +2,7 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">68.183.245.154</domain>
+        <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">imageuploaduser.blr1.digitaloceanspaces.com</domain>
 
     </domain-config>

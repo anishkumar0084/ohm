@@ -8,16 +8,9 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
 import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
@@ -25,11 +18,8 @@ import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
-import com.ohmshantiapps.model.User;
-import com.tapadoo.alerter.Alerter;
+import com.ohmshantiapps.model.Users;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -86,11 +76,11 @@ public class BioActivity extends AppCompatActivity {
 
     }
     private void fetchuserprofile(){
-        userApiClient.fetchUser(Integer.parseInt(userId), new Callback<User>() {
+        userApiClient.fetchUser(Integer.parseInt(userId), new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         // Extract and display the user's name and email
                         String userName = user.getBio();
@@ -109,7 +99,7 @@ public class BioActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 // Show a toast message indicating the failure
             }
         });
@@ -117,7 +107,7 @@ public class BioActivity extends AppCompatActivity {
     }
 
     private void addUsername(String name) {
-        User userUpdateRequest = new User(Integer.parseInt(userId), null, null,null,name,null,null,null,null,null,null,true,null,null);
+        Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,name,null,null,null,null,null,null,true,null,null);
         Call<Void> call1 = userApi.updateUser(Integer.parseInt(userId), userUpdateRequest);
         call1.enqueue(new Callback<Void>() {
             @Override

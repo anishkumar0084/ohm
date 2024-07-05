@@ -21,8 +21,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.R;
-import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.shareChat.Chat;
 import com.squareup.picasso.Picasso;
 
@@ -33,10 +32,10 @@ import java.util.Objects;
 public class AdapterChatUsers extends RecyclerView.Adapter<AdapterChatUsers.MyHolder>{
 
     final Context context;
-    final List<User> userList;
+    final List<Users> userList;
     private String userId;
 
-    public AdapterChatUsers(Context context, List<User> userList) {
+    public AdapterChatUsers(Context context, List<Users> userList) {
         this.context = context;
         this.userList = userList;
     }

@@ -9,7 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Typeface;
+
 import okhttp3.RequestBody;
 import okhttp3.MultipartBody;
 import android.net.Uri;
@@ -35,20 +35,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.NotificationCompat;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.api.ApiService;
@@ -57,7 +43,7 @@ import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.squareup.picasso.Picasso;
 import com.tapadoo.alerter.Alerter;
 
@@ -66,19 +52,11 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.HashMap;
-import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okio.Buffer;
-import okio.BufferedSink;
-import okio.ForwardingSink;
-import okio.Okio;
-import okio.Sink;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -191,11 +169,11 @@ public class Post extends AppCompatActivity {
 
 
 
-        userApiClient.fetchUser(userId, new Callback<User>() {
+        userApiClient.fetchUser(userId, new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         // Extract and display the user's name and email
                         name = user.getName();
@@ -291,7 +269,7 @@ public class Post extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 // Show a toast message indicating the failure
                 showError(t);
             }

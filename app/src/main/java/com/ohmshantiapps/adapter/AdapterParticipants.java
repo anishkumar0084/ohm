@@ -79,7 +79,7 @@ public class AdapterParticipants extends RecyclerView.Adapter<AdapterParticipant
                                 builder.setTitle("Choose Option");
                                 if (myGroupRole.equals("creator")){
                                     if (hisPrevRole.equals("admin")){
-                                        options = new String[]{"Remove Admin", "Remove User"};
+                                        options = new String[]{"Remove Admin", "Remove Users"};
                                         builder.setItems(options, (dialog, which) -> {
                                             if (which == 0) {
                                                 removeAdmin(modelUser);
@@ -91,7 +91,7 @@ public class AdapterParticipants extends RecyclerView.Adapter<AdapterParticipant
                                     }
                                     else if (hisPrevRole.equals("participant"))
                                     {
-                                        options = new String[]{"Make Admin", "Remove User"};
+                                        options = new String[]{"Make Admin", "Remove Users"};
                                         builder.setItems(options, (dialog, which) -> {
                                             if (which == 0) {
                                                 makeAdmin(modelUser);
@@ -114,7 +114,7 @@ public class AdapterParticipants extends RecyclerView.Adapter<AdapterParticipant
                                             st.show();
                                             break;
                                         case "admin":
-                                            options = new String[]{"Remove Admin", "Remove User"};
+                                            options = new String[]{"Remove Admin", "Remove Users"};
                                             builder.setItems(options, new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
@@ -128,7 +128,7 @@ public class AdapterParticipants extends RecyclerView.Adapter<AdapterParticipant
                                             }).show();
                                             break;
                                         case "participant":
-                                            options = new String[]{"Make Admin", "Remove User"};
+                                            options = new String[]{"Make Admin", "Remove Users"};
                                             builder.setItems(options, new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
@@ -170,7 +170,7 @@ public class AdapterParticipants extends RecyclerView.Adapter<AdapterParticipant
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Groups");
         ref.child(groupId).child("Participants").child(modelUser.getId()).setValue(hashMap)
                 .addOnSuccessListener(aVoid -> {
-                    StyleableToast st = new StyleableToast(context, "User added", Toast.LENGTH_LONG);
+                    StyleableToast st = new StyleableToast(context, "Users added", Toast.LENGTH_LONG);
                     st.setBackgroundColor(Color.parseColor("#001E55"));
                     st.setTextColor(Color.WHITE);
                     st.setIcon(R.drawable.ic_check_wt);
@@ -213,7 +213,7 @@ public class AdapterParticipants extends RecyclerView.Adapter<AdapterParticipant
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Groups");
         ref.child(groupId).child("Participants").child(modelUser.getId()).removeValue()
                 .addOnSuccessListener(aVoid -> {
-                    StyleableToast st = new StyleableToast(context, "User removed from the group", Toast.LENGTH_LONG);
+                    StyleableToast st = new StyleableToast(context, "Users removed from the group", Toast.LENGTH_LONG);
                     st.setBackgroundColor(Color.parseColor("#001E55"));
                     st.setTextColor(Color.WHITE);
                     st.setIcon(R.drawable.ic_check_wt);

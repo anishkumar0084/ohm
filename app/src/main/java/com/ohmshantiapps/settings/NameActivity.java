@@ -9,18 +9,9 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
 import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
@@ -29,12 +20,8 @@ import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.tapadoo.alerter.Alerter;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -107,11 +94,11 @@ public class NameActivity extends AppCompatActivity {
 
     }
     private void fetchuserprofile(){
-        userApiClient.fetchUser(Integer.parseInt(userId), new Callback<User>() {
+        userApiClient.fetchUser(Integer.parseInt(userId), new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         // Extract and display the user's name and email
                         String userName = user.getName();
@@ -130,7 +117,7 @@ public class NameActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 // Show a toast message indicating the failure
             }
         });
@@ -139,7 +126,7 @@ public class NameActivity extends AppCompatActivity {
 
     private void addUsername(String name) {
 
-        User userUpdateRequest = new User(Integer.parseInt(userId), name, null,null,null,null,null,null,null,null,null,true,null,null);
+        Users userUpdateRequest = new Users(Integer.parseInt(userId), name, null,null,null,null,null,null,null,null,null,true,null,null);
         ModelPost modelPost = new ModelPost(null,userId,null,name,null,null,null,null,null,null,null,null);
         Call<Void> call2 = userApi.updateModelPost(Integer.parseInt(userId),modelPost);
         call2.enqueue(new Callback<Void>() {

@@ -1,26 +1,23 @@
 package com.ohmshantiapps.api;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.ohmshantiapps.model.ModelComments;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 
 import java.util.List;
 
-import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
-import retrofit2.http.DELETE;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.HTTP;
 import retrofit2.http.Headers;
-import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
-import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -37,7 +34,7 @@ public interface ApiService {
 
     @FormUrlEncoded
     @POST("login_process.php")
-    Call<String> login(
+    Call<JsonObject> login(
             @Field("email") String email,
             @Field("password") String password
     );
@@ -50,24 +47,24 @@ public interface ApiService {
     );
 
     @POST("UserHandler.php")
-    Call<Void> insertUser(@Body User user);
+    Call<Void> insertUser(@Body Users user);
 
     @PUT("UserHandler.php/{id}")
-    Call<Void> updateUser(@Path("id") int userId, @Body User requestBody);
+    Call<Void> updateUser(@Path("id") int userId, @Body Users requestBody);
 
 
 //    @DELETE("UserHandler.php")
-//    Call<Void> deleteUser(@Body User user);
+//    Call<Void> deleteUser(@Body Users user);
 
     @HTTP(method = "DELETE", path = "UserHandler.php", hasBody = true)
     Call<Void> deleteUser(@Body Usersk user);
 
 
     @GET("UserHandler.php")
-    Call<User> fetchUser(@Query("id") int userId);
+    Call<Users> fetchUser(@Query("id") int userId);
 
     @GET("UserHandler.php")
-    Call<List<User>> getUsersByIds(@Query("ids") String ids);
+    Call<List<Users>> getUsersByIds(@Query("ids") String ids);
 
 
 
@@ -101,7 +98,7 @@ public interface ApiService {
             @Query("following_id") int followingId
     );
     @GET("get_users.php")
-    Call<List<User>> getUsers();
+    Call<List<Users>> getUsers();
 
 
     @GET("check_following.php")
@@ -121,7 +118,8 @@ public interface ApiService {
             @Field("userId") int userId
     );
     @GET("Allpost.php")
-    Call<List<ModelPost>> getAllPosts();
+    Call<List<ModelPost>> getAllPosts(
+    );
 
 
     @POST("pid.php")
@@ -159,6 +157,8 @@ public interface ApiService {
             @Field("post_id") String postId,
             @Field("action") String action
     );
+
+
 
 
 

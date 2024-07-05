@@ -29,6 +29,25 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+        <!-- Add the property element to handle the conflict -->
+        <property
+            android:name="android.adservices.AD_SERVICES_CONFIG"
+            tools:replace="android:resource"
+            android:resource="@xml/gma_ad_services_config" />
+
+        <activity
+            android:name=".Chats.ChatActivity"
+            android:exported="false"
+            android:theme="@style/AuthTheme"
+            />
+        <activity
+            android:name=".Chats.GroupChatActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Chats.MainChat"
+            android:exported="false"
+            android:theme="@style/AuthTheme"
+            android:windowSoftInputMode="stateAlwaysHidden" />
         <activity android:name=".groupSettings.GUsernameActivity" />
         <activity android:name=".groupSettings.GnameActivity" />
         <activity android:name=".groupSettings.gLinkActivity" />
@@ -97,7 +116,6 @@
             android:name=".post.PostLikedBy"
             android:configChanges="orientation"
             android:screenOrientation="portrait" />
-
         <activity
             android:name=".shareChat.ShareChatActivity"
             android:configChanges="orientation"
@@ -126,7 +144,6 @@
                 <data android:mimeType="video/*" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".shareChat.ShareActivity"
             android:configChanges="orientation"
@@ -152,17 +169,19 @@
             android:configChanges="orientation"
             android:exported="true"
             android:screenOrientation="portrait">
-        <intent-filter>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <category android:name="android.intent.category.BROWSABLE" />
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
 
-            <!-- Define your domain and pathPrefix for deep linking -->
-            <data
-                android:scheme="http"
-                android:host="68.183.245.154"
-                android:pathPrefix="/user" />
-        </intent-filter></activity>
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Define your domain and pathPrefix for deep linking -->
+                <data
+                    android:host="68.183.245.154"
+                    android:pathPrefix="/user"
+                    android:scheme="http" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".search.Search"
             android:configChanges="orientation"
@@ -221,7 +240,7 @@
         <activity
             android:name=".welcome.IntroLast"
             android:configChanges="orientation"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:theme="@style/AuthTheme" />
         <activity
             android:name=".welcome.IntroActivity"
@@ -258,9 +277,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/paths" />
         </provider>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_send" />
+        <!-- Set color used with incoming notification messages. This is used when no color is set for the incoming
+             notification message. See README(https://goo.gl/6BKBk7) for more. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/green" />
 
         <service
-            android:name=".notifications.FirebaseMessaging"
+            android:name=".Chats.MyFirstbaseService"
             android:enabled="true"
             android:exported="true"
             tools:ignore="ExportedService">

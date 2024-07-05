@@ -9,35 +9,24 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
-import com.ohmshantiapps.adapter.AdapterChatUsers;
-import com.ohmshantiapps.adapter.AdapterPost;
 import com.ohmshantiapps.adapter.AdapterUsers;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.FollowersFollowingResponse;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
-import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
-import com.ohmshantiapps.search.ProfileSearch;
+import com.ohmshantiapps.model.Users;
 import com.tapadoo.alerter.Alerter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -156,16 +145,16 @@ public class MyFollowing extends AppCompatActivity {
                 .show();
     }
     private void getAllUsers(List<Integer> targetIds) {
-        Call<List<User>> call = userApi.getUsers();
-        call.enqueue(new Callback<List<User>>() {
+        Call<List<Users>> call = userApi.getUsers();
+        call.enqueue(new Callback<List<Users>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
-                    List<User> allUsers = response.body();
+                    List<Users> allUsers = response.body();
                     if (allUsers != null) {
                         // Filter the users based on targetIds
-                        List<User> filteredUsers = new ArrayList<>();
-                        for (User user : allUsers) {
+                        List<Users> filteredUsers = new ArrayList<>();
+                        for (Users user : allUsers) {
                             if (targetIds.contains(user.getId())) {
                                 filteredUsers.add(user);
                             }
@@ -176,16 +165,16 @@ public class MyFollowing extends AppCompatActivity {
                         pg.setVisibility(View.GONE);
                     } else {
                         // Handle the case where the user list is null
-                        showToast("User list is empty");
+                        showToast("Users list is empty");
                     }
                 } else {
                     // Handle unsuccessful response
-                    showToast("Failed to fetch data");
+                    showToast("Failed to fetch data"+response.message());
                 }
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onFailure(Call<List<Users>> call, Throwable t) {
                 // Handle network error
                 showToast("Network error: " + t.getMessage());
             }

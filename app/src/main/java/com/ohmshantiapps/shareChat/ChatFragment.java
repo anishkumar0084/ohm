@@ -110,7 +110,7 @@ public class ChatFragment extends Fragment {
                             break;
                         }
                     }
-                    adapterChatList = new AdapterChatList(getContext(), userList);
+//                    adapterChatList = new AdapterChatList(getContext(), userList);
                     recyclerView.setAdapter(adapterChatList);
                     for (int i=0; i<userList.size(); i++){
                         lastMessage(userList.get(i).getId());
@@ -127,47 +127,47 @@ public class ChatFragment extends Fragment {
     }
 
     private void lastMessage(String userId) {
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Chats");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String theLastMessage = "default";
-                for (DataSnapshot ds: snapshot.getChildren()){
-                    ModelChat chat = ds.getValue(ModelChat.class);
-                    if (chat == null){
-                        continue;
-                    }
-                    String sender = chat.getSender();
-                    String receiver = chat.getReceiver();
-                    if(sender == null || receiver == null){
-                        continue;
-                    }
-                    if (chat.getReceiver().equals(currentUser.getUid()) && chat.getSender().equals(userId) || chat.getReceiver().equals(userId) && chat.getSender().equals(currentUser.getUid())){
-                        switch (chat.getType()) {
-                            case "image":
-                                theLastMessage = "Sent a photo";
-                                break;
-                            case "video":
-                                theLastMessage = "Sent a video";
-                                break;
-                            case "post":
-                                theLastMessage = "Sent a post";
-                                break;
-                            default:
-                                theLastMessage = chat.getMsg();
-                                break;
-                        }
-                    }
-                }
-                adapterChatList.notifyDataSetChanged();
-                adapterChatList.setLastMessageMap(userId, theLastMessage);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
+//        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Chats");
+//        reference.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                String theLastMessage = "default";
+//                for (DataSnapshot ds: snapshot.getChildren()){
+//                    ModelChat chat = ds.getValue(ModelChat.class);
+//                    if (chat == null){
+//                        continue;
+//                    }
+//                    String sender = chat.getSender();
+//                    String receiver = chat.getReceiver();
+//                    if(sender == null || receiver == null){
+//                        continue;
+//                    }
+//                    if (chat.getReceiver().equals(currentUser.getUid()) && chat.getSender().equals(userId) || chat.getReceiver().equals(userId) && chat.getSender().equals(currentUser.getUid())){
+//                        switch (chat.getType()) {
+//                            case "image":
+//                                theLastMessage = "Sent a photo";
+//                                break;
+//                            case "video":
+//                                theLastMessage = "Sent a video";
+//                                break;
+//                            case "post":
+//                                theLastMessage = "Sent a post";
+//                                break;
+//                            default:
+//                                theLastMessage = chat.getMessage();
+//                                break;
+//                        }
+//                    }
+//                }
+//                adapterChatList.notifyDataSetChanged();
+//                adapterChatList.setLastMessageMap(userId, theLastMessage);
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError error) {
+//
+//            }
+//        });
     }
 
 

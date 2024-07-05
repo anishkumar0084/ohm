@@ -7,7 +7,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,7 +25,7 @@ import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.FollowersFollowingResponse;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.tapadoo.alerter.Alerter;
 
 import java.util.ArrayList;
@@ -166,16 +165,16 @@ public class FollowersList extends AppCompatActivity {
                 .show();
     }
     private void getAllUsers(List<Integer> targetIds) {
-        Call<List<User>> call = userApi.getUsers();
-        call.enqueue(new Callback<List<User>>() {
+        Call<List<Users>> call = userApi.getUsers();
+        call.enqueue(new Callback<List<Users>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
-                    List<User> allUsers = response.body();
+                    List<Users> allUsers = response.body();
                     if (allUsers != null) {
                         // Filter the users based on targetIds
-                        List<User> filteredUsers = new ArrayList<>();
-                        for (User user : allUsers) {
+                        List<Users> filteredUsers = new ArrayList<>();
+                        for (Users user : allUsers) {
                             if (targetIds.contains(user.getId())) {
                                 filteredUsers.add(user);
                             }
@@ -186,7 +185,7 @@ public class FollowersList extends AppCompatActivity {
                         pg.setVisibility(View.GONE);
                     } else {
                         // Handle the case where the user list is null
-                        showToast("User list is empty");
+                        showToast("Users list is empty");
                     }
                 } else {
                     // Handle unsuccessful response
@@ -195,7 +194,7 @@ public class FollowersList extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onFailure(Call<List<Users>> call, Throwable t) {
                 // Handle network error
                 showToast("Network error: " + t.getMessage());
             }

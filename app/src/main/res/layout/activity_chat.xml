@@ -18,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:id="@+id/imageView9"
+            android:id="@+id/lyt_back"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginStart="8dp"
@@ -34,7 +34,7 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView9"
+            app:layout_constraintStart_toEndOf="@+id/lyt_back"
             app:layout_constraintTop_toTopOf="parent" />
 
         <RelativeLayout

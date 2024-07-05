@@ -1,10 +1,7 @@
 package com.ohmshantiapps.user;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Typeface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,27 +15,26 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
+import com.facebook.shimmer.ShimmerFrameLayout;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.ohmshantiapps.Chats.MainChat;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.adapter.AdapterPost;
 import com.ohmshantiapps.adapter.AdapterStory;
 import com.ohmshantiapps.api.ApiService;
-import com.ohmshantiapps.api.ModelPostRequest;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
-import com.ohmshantiapps.api.Usersk;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.ModelStory;
 import com.ohmshantiapps.model.User;
-import com.ohmshantiapps.notifications.NotificationScreen;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.post.Post;
-import com.ohmshantiapps.post.UpdatePost;
 import com.ohmshantiapps.search.Search;
 import com.tapadoo.alerter.Alerter;
 
@@ -66,8 +62,6 @@ public class HomeFragment extends Fragment {
     private List<ModelStory> storyList;
 
     private int userId;
-    List<String> followingList;
-    List<String> followingSList;
     CircleImageView circular;
     ConstraintLayout post;
     private UserApiClient userApiClient;
@@ -75,6 +69,8 @@ public class HomeFragment extends Fragment {
     private static final int TOTAL_ITEMS_TO_LOAD = 7;
     private int mCurrenPage = 1;
     ApiService apiService;
+    FirebaseDatabase database;
+    ShimmerFrameLayout shimmerFrameLayout;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -83,6 +79,9 @@ public class HomeFragment extends Fragment {
       View view = inflater.inflate(R.layout.fragment_home, container, false);
 
       recyclerView = view.findViewById(R.id.postView);
+      shimmerFrameLayout = view.findViewById(R.id.shimmer);
+      shimmerFrameLayout.startShimmer();
+        database = FirebaseDatabase.getInstance();
 
         RecyclerView storyView = view.findViewById(R.id.storyView);
         storyView.setHasFixedSize(true);
@@ -106,9 +105,8 @@ public class HomeFragment extends Fragment {
         layoutManager.setStackFromEnd(true);
         layoutManager.setReverseLayout(true);
         recyclerView.setLayoutManager(layoutManager);
+
         postList= new ArrayList<>();
-//        checkFollowing();
-//        checkSFollowing();
 
         post.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), Post.class);
@@ -118,7 +116,7 @@ public class HomeFragment extends Fragment {
 
 
         imageView4.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), NotificationScreen.class);
+            Intent intent = new Intent(getActivity(), MainChat.class);
             startActivity(intent);
         });
 
@@ -142,31 +140,7 @@ public class HomeFragment extends Fragment {
          userId = Integer.parseInt(sessionManager.getUserId());
         userApiClient = new UserApiClient();
 
-//        Usersk userToDelete = new Usersk();
-//        userToDelete.setId(316);
-//
-//
-//
-//        Call<Void> call = apiService.deleteUser(userToDelete);
-//        call.enqueue(new Callback<Void>() {
-//            @Override
-//            public void onResponse(Call<Void> call, Response<Void> response) {
-//                if (response.isSuccessful()) {
-//                    Toast.makeText(requireContext(),"asks",Toast.LENGTH_SHORT).show();
-//
-//
-//                } else {
-//                    Toast.makeText(requireContext(),"ask",Toast.LENGTH_SHORT).show();
-//
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<Void> call, Throwable t) {
-//                Toast.makeText(requireContext(),""+t.getMessage(),Toast.LENGTH_SHORT).show();
-//                Log.e("Network Error", t.getMessage());
-//            }
-//        });
+
 
 
         fetchUserDetails(userId);
@@ -181,16 +155,31 @@ public class HomeFragment extends Fragment {
     }
     private void fetchUserDetails(int userId) {
 
-        userApiClient.fetchUser(userId, new Callback<User>() {
+        userApiClient.fetchUser(userId, new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
 
                         String photoUrl = user.getPhoto();
                         String userIds=user.getUserid();
-                        if (userIds==null){
+
+                        User userk = new User(userIds, user.getName(), user.getEmail(), user.getPhoto());
+
+                        database.getReference()
+                                .child("users")
+                                .child(userIds)
+                                .setValue(userk)
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+
+                                    }
+                                });
+
+
+                        if (userIds.isEmpty()){
 
                             FirebaseUser firebaseUser = mAuth.getCurrentUser();
                             String userid = Objects.requireNonNull(firebaseUser).getUid();
@@ -198,7 +187,7 @@ public class HomeFragment extends Fragment {
 
 
 
-                            User userUpdateRequest = new User(Integer.parseInt(String.valueOf(userId)), null, null,null,null,null,null,null,null,null,null,true,null,userid);
+                            Users userUpdateRequest = new Users(Integer.parseInt(String.valueOf(userId)), null, null,null,null,null,null,null,null,null,null,true,null,userid);
 
                             Call<Void> call1 =apiService.updateUser(Integer.parseInt(String.valueOf(userId)), userUpdateRequest);
                             call1.enqueue(new Callback<Void>() {
@@ -249,7 +238,7 @@ public class HomeFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 showError(t);
             }
         });
@@ -335,6 +324,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void fetchPostsFromFollowingUsers(List<Integer> followingUserIds) {
+        recyclerView.setVisibility(View.VISIBLE);
         for (Integer userId : followingUserIds) {
             // Fetch posts by user ID
             Call<List<ModelPost>> postsCall = apiService.getPostsByUserId("getPostsByUserId", userId);
@@ -354,6 +344,8 @@ public class HomeFragment extends Fragment {
                         } else {
                             // Handle case where no posts are available
                         }
+                        shimmerFrameLayout.stopShimmer();
+                        shimmerFrameLayout.setVisibility(View.GONE);
 
                     } else {
                         // Handle unsuccessful response

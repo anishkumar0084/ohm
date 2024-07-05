@@ -24,6 +24,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.model.ModelChat;
 import com.ohmshantiapps.post.PostDetails;
 import com.ohmshantiapps.user.MediaView;
@@ -67,7 +68,7 @@ public class AdapterChat extends RecyclerView.Adapter<AdapterChat.MyHolder>{
 
         ModelChat mChat = modelChats.get(position);
 
-        String msg = modelChats.get(position).getMsg();
+        String msg = modelChats.get(position).getMessage();
         String type = modelChats.get(position).getType();
 
         switch (type) {
@@ -169,7 +170,7 @@ public class AdapterChat extends RecyclerView.Adapter<AdapterChat.MyHolder>{
         }
 
         if (position == modelChats.size()-1){
-            if (mChat.isIsSeen()) {
+            if (mChat.isSeen()==0) {
                holder.seen.setText("Seen");
             }else {
                 holder.seen.setText("Delivered");
@@ -237,8 +238,8 @@ public class AdapterChat extends RecyclerView.Adapter<AdapterChat.MyHolder>{
 
     @Override
     public int getItemViewType(int position) {
-        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (modelChats.get(position).getSender().equals(firebaseUser.getUid())){
+        SessionManager sessionManager=new SessionManager(context);
+        if (modelChats.get(position).getSender().equals(sessionManager.getUserId())){
             return MSG_TYPE_RIGHT;
         }else {
             return MSG_TYPE_LEFT;

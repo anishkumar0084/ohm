@@ -11,7 +11,7 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-public class OreoAndAboveNotification extends ContextWrapper {
+public class  OreoAndAboveNotification extends ContextWrapper {
     private static final String ID = "some_id";
     private static final String NAME = "FirebaseAPP";
     private NotificationManager notificationManager;

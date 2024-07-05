@@ -77,7 +77,7 @@ public class Finish extends AppCompatActivity {
                             .setBackgroundColorRes(R.color.colorPrimary)
                             .setDuration(10000)
                             .enableSwipeToDismiss()
-                            .setText("User ID not found")
+                            .setText("Users ID not found")
                             .show();
                     progressBar3.setVisibility(View.INVISIBLE);
                 }

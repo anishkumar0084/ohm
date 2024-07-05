@@ -7,14 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ohmshantiapps.R;
-import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.user.UserProfile;
 import com.squareup.picasso.Picasso;
 
@@ -23,9 +21,9 @@ import java.util.List;
 public class AdapterUsers extends RecyclerView.Adapter<AdapterUsers.MyHolder>{
 
     final Context context;
-    final List<User> userList;
+    final List<Users> userList;
 
-    public AdapterUsers(Context context, List<User> userList) {
+    public AdapterUsers(Context context, List<Users> userList) {
         this.context = context;
         this.userList = userList;
     }
@@ -43,7 +41,6 @@ public class AdapterUsers extends RecyclerView.Adapter<AdapterUsers.MyHolder>{
         String userImage = userList.get(position).getPhoto();
         final String userName = userList.get(position).getName();
         String userUsernsme = userList.get(position).getUsername();
-        String userid=userList.get(position).getUserid();
 
         holder.mName.setText(userName);
         holder.mUsername.setText(userUsernsme);
@@ -58,7 +55,6 @@ public class AdapterUsers extends RecyclerView.Adapter<AdapterUsers.MyHolder>{
         holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, UserProfile.class);
                 intent.putExtra("hisUid", hisUID);
-                intent.putExtra("userid", userid);
                 context.startActivity(intent);
         });
 

@@ -9,29 +9,20 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.adapter.AdapterChatUsers;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -130,12 +121,12 @@ public class ProfileSearch extends AppCompatActivity {
 //    }
 
     private void getAllUsers() {
-        Call<List<User>> call = apiInterface.getUsers();
-        call.enqueue(new Callback<List<User>>() {
+        Call<List<Users>> call = apiInterface.getUsers();
+        call.enqueue(new Callback<List<Users>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
-                    List<User> userList = response.body();
+                    List<Users> userList = response.body();
                     adapterUsers = new AdapterChatUsers(ProfileSearch.this, userList);
                     adapterUsers.notifyDataSetChanged();
                     recyclerView.setAdapter(adapterUsers);
@@ -147,7 +138,7 @@ public class ProfileSearch extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onFailure(Call<List<Users>> call, Throwable t) {
                 // Handle network error
             }
         });

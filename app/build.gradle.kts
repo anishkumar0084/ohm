@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.ohmshantiapps"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -41,6 +41,11 @@ android {
     packagingOptions {
         exclude("META-INF/DEPENDENCIES")
     }
+
+    buildFeatures {
+        viewBinding =true
+    }
+
 
 }
 
@@ -102,6 +107,21 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation ("com.amazonaws:aws-android-sdk-s3:2.16.12")
     implementation ("com.github.chrisbanes:PhotoView:2.3.0")
+    implementation ("androidx.room:room-runtime:2.2.5")
+    annotationProcessor ("androidx.room:room-compiler:2.2.5")
+    implementation ("com.mikhaellopez:circularimageview:3.2.0")
+    implementation ("com.balysv:material-ripple:1.0.2")
+    implementation ("com.github.1902shubh:SendMail:1.0.0")
+    implementation ("com.github.mukeshsolanki:android-otpview-pinview:2.1.2")
+    implementation ("com.github.sharish:ShimmerRecyclerView:v1.3")
+    implementation ("com.facebook.shimmer:shimmer:0.5.0")
+    implementation ("com.devlomi:circularstatusview:1.0.1")
+    implementation ("com.google.firebase:firebase-config")
+    implementation ("com.github.pgreze:android-reactions:1.3")
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.devlomi:circularstatusview:1.0.1")
+    implementation("com.github.OMARIHAMZA:StoryView:1.0.2-alpha")
 
 
 

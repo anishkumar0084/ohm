@@ -1,21 +1,14 @@
 package com.ohmshantiapps.post;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.TextUtils;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -24,18 +17,13 @@ import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.media3.common.MediaItem;
-import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
-import androidx.media3.common.util.Util;
 
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -48,16 +36,8 @@ import androidx.media3.ui.PlayerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.api.ApiService;
@@ -66,13 +46,9 @@ import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.User;
-import com.ohmshantiapps.user.UserProfile;
-import com.ohmshantiapps.welcome.GetTimeAgo;
-import com.squareup.picasso.Picasso;
+import com.ohmshantiapps.model.Users;
 import com.tapadoo.alerter.Alerter;
 
-import java.util.HashMap;
 import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -153,11 +129,11 @@ public class UpdatePost extends AppCompatActivity {
 
         int userId = Integer.parseInt(sessionManager.getUserId());
 
-        userApiClient.fetchUser(userId, new Callback<User>() {
+        userApiClient.fetchUser(userId, new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         // Extract and display the user's name and email
                         name = user.getName();
@@ -182,7 +158,7 @@ public class UpdatePost extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
 
                 Toast.makeText(UpdatePost.this, "Failed to fetch user: ", Toast.LENGTH_SHORT).show();
             }

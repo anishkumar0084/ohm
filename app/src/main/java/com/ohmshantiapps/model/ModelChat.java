@@ -1,33 +1,33 @@
 package com.ohmshantiapps.model;
 
-@SuppressWarnings({"ALL", "unused"})
-public class ModelChat  {
+import com.google.gson.annotations.SerializedName;
 
+public class ModelChat {
+    @SerializedName("sender")
     private String sender;
-    private String receiver;
-    private String msg;
-    private String type;
-    private boolean isSeen;
 
-    public ModelChat(String sender, String receiver, String msg, String type, boolean isSeen) {
+    @SerializedName("receiver")
+    private String receiver;
+
+    @SerializedName("msg")
+    private String message;
+
+    @SerializedName("isSeen")
+    private int isSeen;
+
+    @SerializedName("type")
+    private String type;
+
+    // Constructors, getters, and setters
+    public ModelChat(String sender, String receiver, String message, String type, int isSeen) {
         this.sender = sender;
         this.receiver = receiver;
-        this.msg = msg;
-        this.type = type;
+        this.message = message;
         this.isSeen = isSeen;
-    }
-
-    public ModelChat() {
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
         this.type = type;
     }
 
+    // Getters and setters
     public String getSender() {
         return sender;
     }
@@ -44,19 +44,27 @@ public class ModelChat  {
         this.receiver = receiver;
     }
 
-    public String getMsg() {
-        return msg;
+    public String getMessage() {
+        return message;
     }
 
-    public void setMsg(String msg) {
-        this.msg = msg;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
-    public boolean isIsSeen() {
+    public int isSeen() {
         return isSeen;
     }
 
-    public void setIsSeen(boolean isSeen) {
-        this.isSeen = isSeen;
+    public void setSeen(int seen) {
+        isSeen = seen;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

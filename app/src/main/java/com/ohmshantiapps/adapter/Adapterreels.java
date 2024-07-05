@@ -13,6 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelPost;
 
 import java.util.List;
@@ -20,11 +22,14 @@ import java.util.List;
 public class Adapterreels extends RecyclerView.Adapter<Adapterreels.ReelViewHolder> {
 
     private Context context;
-    private List<ModelPost> reelList; // Using the reels class
+    private List<ModelPost> reelList;
+    ApiService apiService;
 
     public  Adapterreels (Context context, List<ModelPost> reelList) {
         this.context = context;
         this.reelList = reelList;
+        apiService = RetrofitClient.getClient().create(ApiService.class);
+
     }
 
     @NonNull

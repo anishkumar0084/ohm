@@ -19,14 +19,14 @@
 
 
         <ImageView
-            android:id="@+id/imageView3"
+            android:id="@+id/imageView6"
             android:layout_width="32dp"
+            android:src="@drawable/ic_search"
             android:contentDescription="@string/contentdescription"
             android:layout_height="32dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
-            android:src="@drawable/ic_filter"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -36,11 +36,25 @@
             android:id="@+id/imageView4"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:contentDescription="@string/contentdescription"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
+            android:contentDescription="@string/contentdescription"
             android:layout_marginBottom="16dp"
-            android:src="@drawable/ic_search"
+            android:src="@drawable/ic_bell"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#fff" />
+
+        <ImageView
+            android:id="@+id/message"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="50dp"
+            android:contentDescription="@string/contentdescription"
+            android:layout_marginBottom="16dp"
+            android:src="@drawable/ic_bell"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -50,107 +64,71 @@
             android:id="@+id/textView11"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:ignore="HardcodedText,SpUsage"
             android:layout_centerHorizontal="true"
-            android:fontFamily="@font/black"
-            android:text="Search"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="@font/bungee"
+            android:text="@string/app_name" tools:ignore="SpUsage"
             android:textColor="?attr/headertextcolor"
             android:textSize="24dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/imageView4"
-            app:layout_constraintStart_toEndOf="@+id/imageView3"
+            app:layout_constraintStart_toEndOf="@+id/imageView6"
             app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-    <RelativeLayout
-        android:id="@+id/rl"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/header">
 
-        <ProgressBar
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:indeterminateOnly="true"
-            android:id="@+id/pg"
-            android:visibility="visible" />
-    </RelativeLayout>
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/rl">
+        app:layout_constraintTop_toBottomOf="@+id/header">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/posts_rv"
-        app:reverseLayout="true"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/post"
-        app:stackFromEnd="true"
-     />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:id="@+id/likes_rv"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/post"
-        app:reverseLayout="true"
-        app:stackFromEnd="true"
-       />
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <RelativeLayout
+                    android:layout_marginTop="8dp"
+                    android:background="?attr/layoutcolor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:visibility="gone"
-        android:layout_height="wrap_content"
-        android:id="@+id/views_rv"
-        app:reverseLayout="true"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/post"
-        app:stackFromEnd="true"
-         />
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/storyView"
+                        android:layout_width="match_parent"
+                        android:visibility="gone"
+                        android:layout_height="wrap_content" />
+                </RelativeLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:reverseLayout="true"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/post"
-        app:stackFromEnd="true"
-        android:id="@+id/comment_rv"
- />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/post_rvk"
+                    android:layout_width="match_parent"
+                    android:visibility="gone"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:reverseLayout="true"
-        app:stackFromEnd="true"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/post"
-        android:id="@+id/meme_rv"
-  />
+        <com.facebook.shimmer.ShimmerFrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="60dp"
+            android:id="@+id/shimmer">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:reverseLayout="true"
-        app:stackFromEnd="true"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/post"
-        android:id="@+id/vines_rv"
-        />
+                android:orientation="vertical">
+                <include layout="@layout/shimmer"/>
+                <include layout="@layout/shimmer"/>
+                <include layout="@layout/shimmer"/>
+                <include layout="@layout/shimmer"/>
+                <include layout="@layout/shimmer"/>
 
+            </LinearLayout>
+
+        </com.facebook.shimmer.ShimmerFrameLayout>
 
     </RelativeLayout>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

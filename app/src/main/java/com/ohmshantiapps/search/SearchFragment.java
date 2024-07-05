@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -41,7 +43,8 @@ import retrofit2.Response;
 @SuppressWarnings("NullableProblems")
 public class SearchFragment extends Fragment implements View.OnClickListener {
 
-    ImageView search,imageView3;
+    ImageView imageView3;
+    ImageView search;
     RecyclerView posts_rv, likes_rv, views_rv, comment_rv, meme_rv, vines_rv;
     ProgressBar pg;
     BottomSheetDialog bottomSheetDialog;
@@ -49,91 +52,107 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
     //Post
     AdapterPost adapterPost;
     List<ModelPost> postList;
+    private boolean isLoading = false;
+    private boolean isLastPage = false;
+    private int currentPage = 1;
+    private int totalPageCount = 5;
 
     private int mCurrenPage = 1;
 
 
     ApiService userApi;
+    ShimmerFrameLayout shimmerFrameLayout;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_search, container, false);
-        search = view.findViewById(R.id.imageView4);
-        imageView3= view.findViewById(R.id.imageView3);
 
-        posts_rv = view.findViewById(R.id.posts_rv);
-        likes_rv = view.findViewById(R.id.likes_rv);
-        views_rv = view.findViewById(R.id.views_rv);
-        comment_rv = view.findViewById(R.id.comment_rv);
-        meme_rv = view.findViewById(R.id.meme_rv);
-        vines_rv = view.findViewById(R.id.vines_rv);
+        posts_rv = view.findViewById(R.id.post_rvk);
+
+        search = view.findViewById(R.id.imageView6);
+//        imageView3= view.findViewById(R.id.imageView3);
+
         userApi = RetrofitClient.getClient().create(ApiService.class);
 
-        likes_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
 
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getLikePost();
-                }
-            }
-        });
-        views_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
 
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getViewsPost();
-                }
-            }
-        });
-        comment_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        layoutManager.setStackFromEnd(true);
+        layoutManager.setReverseLayout(true);
+        posts_rv.setLayoutManager(layoutManager);
 
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getCommentPost();
-                }
-            }
-        });
-        meme_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
+        shimmerFrameLayout = view.findViewById(R.id.shimmer);
+        shimmerFrameLayout.startShimmer();
+//        likes_rv = view.findViewById(R.id.likes_rv);
+//        views_rv = view.findViewById(R.id.views_rv);
+//        comment_rv = view.findViewById(R.id.comment_rv);
+//        meme_rv = view.findViewById(R.id.meme_rv);
+//        vines_rv = view.findViewById(R.id.vines_rv);
 
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getMemePost();
-                }
-            }
-        });
-        vines_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
+//        likes_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                super.onScrollStateChanged(recyclerView, newState);
+//
+//                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
+//                    mCurrenPage++;
+////                    getLikePost();
+//                }
+//            }
+//        });
+//        views_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                super.onScrollStateChanged(recyclerView, newState);
+//
+//                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
+//                    mCurrenPage++;
+////                    getViewsPost();
+//                }
+//            }
+//        });
+//        comment_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                super.onScrollStateChanged(recyclerView, newState);
+//
+//                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
+//                    mCurrenPage++;
+////                    getCommentPost();
+//                }
+//            }
+//        });
+//        meme_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                super.onScrollStateChanged(recyclerView, newState);
+//
+//                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
+//                    mCurrenPage++;
+////                    getMemePost();
+//                }
+//            }
+//        });
+//        vines_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                super.onScrollStateChanged(recyclerView, newState);
+//
+//                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
+//                    mCurrenPage++;
+////                    getVinesPost();
+//                }
+//            }
+//        });
 
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getVinesPost();
-                }
-            }
-        });
-
-        pg = view.findViewById(R.id.pg);
-        pg.setVisibility(View.VISIBLE);
+//        pg = view.findViewById(R.id.pg);
+//        pg.setVisibility(View.VISIBLE);
         search.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), Search.class);
             startActivity(intent);
         });
-        imageView3.setOnClickListener(v -> bottomSheetDialog.show());
+//        imageView3.setOnClickListener(v -> bottomSheetDialog.show());
 
 
 
@@ -143,27 +162,27 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
 
 
         //Likes
-        postList = new ArrayList<>();
-
-
-
-        //Comment
-        postList = new ArrayList<>();
-
-
-        //views
-        postList = new ArrayList<>();
-
-        //Meme
-        postList = new ArrayList<>();
-
-
-        //Vine
-        postList = new ArrayList<>();
+//        postList = new ArrayList<>();
+//
+//
+//
+//        //Comment
+//        postList = new ArrayList<>();
+//
+//
+//        //views
+//        postList = new ArrayList<>();
+//
+//        //Meme
+//        postList = new ArrayList<>();
+//
+//
+//        //Vine
+//        postList = new ArrayList<>();
 
         getAllPost();
 
-        createBottomSheetDialog();
+//        createBottomSheetDialog();
         return view;
     }
     private void createBottomSheetDialog() {
@@ -187,7 +206,8 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
         }
     }
     private void getAllPost() {
-        Call<List<ModelPost>> postsCall = userApi.getAllPosts(); // Modify API call to get all posts
+        posts_rv.setVisibility(View.VISIBLE);
+        Call<List<ModelPost>> postsCall = userApi.getAllPosts();
         postsCall.enqueue(new Callback<List<ModelPost>>() {
             @Override
             public void onResponse(Call<List<ModelPost>> call, retrofit2.Response<List<ModelPost>> response) {
@@ -197,14 +217,13 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
                         postList.addAll(posts);
                         adapterPost = new AdapterPost(getActivity(), postList);
                         posts_rv.setAdapter(adapterPost);
-                        pg.setVisibility(View.GONE);
                         adapterPost.notifyDataSetChanged();
-                        // Handle received posts
                     } else {
-                        // Handle case where no posts are available
+
                     }
+                    shimmerFrameLayout.stopShimmer();
+                    shimmerFrameLayout.setVisibility(View.GONE);
                 } else {
-                    // Handle unsuccessful response
                 }
             }
 

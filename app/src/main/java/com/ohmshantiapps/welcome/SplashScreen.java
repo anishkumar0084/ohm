@@ -7,6 +7,8 @@ import android.os.Handler;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.ohmshantiapps.Check;
 import com.ohmshantiapps.R;
 
@@ -16,6 +18,12 @@ public class SplashScreen extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash_screen);
+        FirebaseRemoteConfig mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
+        FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
+                .setMinimumFetchIntervalInSeconds(0)
+                .build();
+        mFirebaseRemoteConfig.setConfigSettingsAsync(configSettings);
+
         SharedPreferences settings=getSharedPreferences("prefs",0);
         boolean firstRun=settings.getBoolean("firstRun",false);
         if(!firstRun)//if running for first time

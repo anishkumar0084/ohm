@@ -11,23 +11,16 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.adapter.AdapterUsers;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.LikeResponse;
 import com.ohmshantiapps.api.RetrofitClient;
-import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +33,7 @@ public class PostLikedBy extends AppCompatActivity {
     SharedPref sharedPref;
     String postId;
     private RecyclerView recyclerView;
-    private List<User> userList;
+    private List<Users> userList;
     ProgressBar pg;
     private AdapterUsers adapterUsers;
     ImageView imageView3;
@@ -97,13 +90,13 @@ public class PostLikedBy extends AppCompatActivity {
     private void getUsers(List<String> hisUid) {
         String ids = TextUtils.join(",", hisUid);
 
-        Call<List<User>> call=apiService.getUsersByIds(ids);
+        Call<List<Users>> call=apiService.getUsersByIds(ids);
 
-        call.enqueue(new Callback<List<User>>() {
+        call.enqueue(new Callback<List<Users>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
-                    List<User> users = response.body();
+                    List<Users> users = response.body();
                     adapterUsers = new AdapterUsers(PostLikedBy.this, users);
                     recyclerView.setAdapter(adapterUsers);
                     pg.setVisibility(View.GONE);
@@ -115,7 +108,7 @@ public class PostLikedBy extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable throwable) {
+            public void onFailure(Call<List<Users>> call, Throwable throwable) {
                 Toast.makeText(PostLikedBy.this, "Failed to fetch users: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
 
 

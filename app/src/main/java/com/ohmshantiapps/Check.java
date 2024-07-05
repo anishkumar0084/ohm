@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.authEmail.SignIn;
 import com.ohmshantiapps.welcome.IntroLast;
 
 public class Check extends AppCompatActivity {
@@ -18,6 +19,12 @@ public class Check extends AppCompatActivity {
 
     private static final String PREF_NAME = "MyPrefs";
     private static final String USER_ID_KEY = "userId";
+    public static final String DATABASE_NAME = "whatsapp_clone_db";
+    public static final String LOGGED_IN_USER_TABLE = "LOGGED_IN_USER_TABLE";
+    public static final String USERS_TABLE = "USERS_TABLE";
+    public static final String MESSAGES_TABLE = "MESSAGES_TABLE";
+
+
 
     private SharedPreferences sharedPreferences;
 
@@ -44,7 +51,7 @@ public class Check extends AppCompatActivity {
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null){
-            Intent intent = new Intent(Check.this, IntroLast.class);
+            Intent intent = new Intent(Check.this, SignIn.class);
             startActivity(intent);
         }else {
             Intent intent = new Intent(Check.this, MainActivity.class);
@@ -67,7 +74,7 @@ public class Check extends AppCompatActivity {
 
     private void redirectToIntroLastActivity() {
         // Redirect the user to IntroLast activity for login or registration
-        Intent intent = new Intent(Check.this, IntroLast.class);
+        Intent intent = new Intent(Check.this, SignIn.class);
         startActivity(intent);
         finish(); // Finish Check activity to prevent user from coming back using back button
     }

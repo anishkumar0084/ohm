@@ -19,11 +19,13 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.ohmshantiapps.Chats.MainChat;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
+import com.ohmshantiapps.authEmail.SignIn;
 import com.ohmshantiapps.user.MyFollowing;
 import com.ohmshantiapps.welcome.IntroLast;
 
@@ -58,39 +60,30 @@ public class Menu extends AppCompatActivity {
         firebaseUser = mAuth.getCurrentUser();
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         logout = findViewById(R.id.logout);
-        followers = findViewById(R.id.followers);
-        following = findViewById(R.id.following);
+
         aSwitch = findViewById(R.id.mySwitch);
-        policy = findViewById(R.id.policy);
-        delete = findViewById(R.id.delete);
+//        policy = findViewById(R.id.policy);
+//        delete = findViewById(R.id.delete);
         imageView3 = findViewById(R.id.imageView3);
         imageView3.setOnClickListener(v -> onBackPressed());
-        invite = findViewById(R.id.invite);
+//        invite = findViewById(R.id.invite);
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
-        followers.setOnClickListener(v -> {
-            Intent intent = new Intent(Menu.this, MyFollowing.class);
-            intent.putExtra("title", "followers");
-            startActivity(intent);
-        });
+
         apiService = RetrofitClient.getClient().create(ApiService.class);
-        policy.setOnClickListener(v -> {
-            Intent intent = new Intent(Menu.this, Policy.class);
-            startActivity(intent);
-        });
-        following.setOnClickListener(v -> {
-            Intent intent = new Intent(Menu.this, MyFollowing.class);
-            intent.putExtra("title", "following");
-            startActivity(intent);
-        });
-        invite.setOnClickListener(v -> {
-            String shareBody = "Myfriends - Friends Social Network" + " Download now on play store \nhttps://play.google.com/store/apps/details?id=com.ohm.shantiapp";
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("text/*");
-            intent.putExtra(Intent.EXTRA_SUBJECT,"Subject Here");
-            intent.putExtra(Intent.EXTRA_TEXT,shareBody);
-            startActivity(Intent.createChooser(intent, "Share Via"));
-        });
+//        policy.setOnClickListener(v -> {
+//            Intent intent = new Intent(Menu.this, Policy.class);
+//            startActivity(intent);
+//        });
+
+//        invite.setOnClickListener(v -> {
+//            String shareBody = "Myfriends - Friends Social Network" + " Download now on play store \nhttps://play.google.com/store/apps/details?id=com.ohm.shantiapp";
+//            Intent intent = new Intent(Intent.ACTION_SEND);
+//            intent.setType("text/*");
+//            intent.putExtra(Intent.EXTRA_SUBJECT,"Subject Here");
+//            intent.putExtra(Intent.EXTRA_TEXT,shareBody);
+//            startActivity(Intent.createChooser(intent, "Share Via"));
+//        });
         if (sharedPref.loadNightModeState()){
             aSwitch.setChecked(true);
         }
@@ -113,50 +106,22 @@ public class Menu extends AppCompatActivity {
             Intent intent = new Intent(Menu.this, Saved.class);
             startActivity(intent);
         });
-        delete.setOnClickListener(v -> {
-            AlertDialog.Builder builder = new AlertDialog.Builder(Menu.this);
-            builder.setTitle("Delete Account");
-            builder.setMessage("Do you want to delete your account?");
-            builder.setPositiveButton("Delete", (dialog, which) -> {
-                // Show a dialog to enter the user's password for re-authentication
-                showReAuthenticationDialog();
-            }).setNegativeButton("No", (dialog, which) -> dialog.dismiss());
-            builder.show();
-        });
-
-//       DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference().child("Users").child(firebaseUser.getUid());
-//        mDatabase.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                 mEmail = Objects.requireNonNull(dataSnapshot.child("email").getValue()).toString();
-//                 if (mEmail.isEmpty()){
-//                     email.setVisibility(View.GONE);
-//                     password.setVisibility(View.GONE);
-//                 }
-//
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//                Alerter.create(Menu.this)
-//                        .setTitle("Error")
-//                        .setIcon(R.drawable.ic_error)
-//                        .setBackgroundColorRes(R.color.colorPrimary)
-//                        .setDuration(10000)
-//                        .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
-//                        .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-//                        .enableSwipeToDismiss()
-//                        .setText(databaseError.getMessage())
-//                        .show();
-//
-//            }
+//        delete.setOnClickListener(v -> {
+//            AlertDialog.Builder builder = new AlertDialog.Builder(Menu.this);
+//            builder.setTitle("Delete Account");
+//            builder.setMessage("Do you want to delete your account?");
+//            builder.setPositiveButton("Delete", (dialog, which) -> {
+//                // Show a dialog to enter the user's password for re-authentication
+//                showReAuthenticationDialog();
+//            }).setNegativeButton("No", (dialog, which) -> dialog.dismiss());
+//            builder.show();
 //        });
 
-        password.setVisibility(View.GONE);
 
         email.setOnClickListener(v -> {
 
-           shareProfileLink();
+
+
         });
         password.setOnClickListener(v -> {
             Intent intent = new Intent(Menu.this, ChangePassword.class);
@@ -227,7 +192,7 @@ public class Menu extends AppCompatActivity {
                     });
         } else {
             // Handle case where firebaseUser is null
-            Toast.makeText(Menu.this, "User not logged in or already deleted.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(Menu.this, "Users not logged in or already deleted.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -245,7 +210,7 @@ public class Menu extends AppCompatActivity {
 
 
         if (currentUser == null) {
-            Intent intent = new Intent(Menu.this, IntroLast.class);
+            Intent intent = new Intent(Menu.this, SignIn.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();

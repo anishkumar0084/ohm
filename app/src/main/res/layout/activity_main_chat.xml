@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f9f9f9"
+    tools:context=".Chats.MainChat">
+
+    <include
+        android:id="@+id/toolbar"
+        layout="@layout/custom_toolbar" />
+
+
+
+
+    <com.cooltechworks.views.shimmer.ShimmerRecyclerView
+        android:id="@+id/statusList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:shimmer_demo_angle="20"
+        android:layout_below="@id/toolbar"
+        app:shimmer_demo_child_count="10"
+        app:shimmer_demo_grid_child_count="2"
+        app:shimmer_demo_layout="@layout/demo_status"
+        app:shimmer_demo_layout_manager_type="linear_horizontal" />
+
+    <View
+        android:id="@+id/view3"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/statusList"
+        android:layout_marginTop="8dp"
+        android:background="#B6B6B6" />
+
+    <com.cooltechworks.views.shimmer.ShimmerRecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/view3"
+        android:layout_above="@id/adView"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:shimmer_demo_angle="20"
+        app:shimmer_demo_child_count="10"
+        app:shimmer_demo_grid_child_count="2"
+        app:shimmer_demo_layout="@layout/demo_layout"
+        app:shimmer_demo_layout_manager_type="linear_vertical"
+        tools:listitem="@layout/row_conversation" />
+
+    <com.google.android.gms.ads.AdView
+        xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/adView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        ads:adSize="BANNER"
+        android:visibility="gone"
+        ads:adUnitId="@string/banner_ad_unit_id" />
+
+
+
+</RelativeLayout>

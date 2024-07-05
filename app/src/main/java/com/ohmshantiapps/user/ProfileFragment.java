@@ -30,7 +30,7 @@ import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.menu.Menu;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.post.Post;
 import com.ohmshantiapps.settings.EditProfile;
 import com.tapadoo.alerter.Alerter;
@@ -153,130 +153,12 @@ public class ProfileFragment extends Fragment {
         // Initialize ApiService
         userApi = RetrofitClient.getClient().create(ApiService.class);
 
-//        User userUpdateRequest = new User(30, "anisis ekek", "anishsinghjamsar@gmail.com",null,null,null,null,null,null,null,null,true,null);
-//
-//        // Make the API call
-//        Call<Void> call = userApi.updateUser(30, userUpdateRequest);
-//        call.enqueue(new Callback<Void>() {
-//            @Override
-//            public void onResponse(Call<Void> call, Response<Void> response) {
-//                if (response.isSuccessful()) {
-//                    // Update successful
-//                    // Handle success
-//                } else {
-//                    // Update failed
-//                    // Handle failure
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<Void> call, Throwable t) {
-//                // Network error
-//                // Handle network error
-//            }
-//        });
-
-
-
-
         userApiClient = new UserApiClient();
         SessionManager sessionManager = new SessionManager(requireContext());
 
          userIdd = Integer.parseInt(sessionManager.getUserId());
 
          fetchProfile();
-
-
-
-
-
-
-
-
-
-        //display
-//        mDatabase.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                String name = Objects.requireNonNull(dataSnapshot.child("name").getValue()).toString();
-//                mName.setText(name);
-//                String username = Objects.requireNonNull(dataSnapshot.child("username").getValue()).toString();
-//                mUsername.setText(username);
-//                String photo = Objects.requireNonNull(dataSnapshot.child("photo").getValue()).toString();
-//                try {
-//                    Picasso.get().load(photo).into(circularImageView);
-//                }
-//                catch (Exception e ){
-//                    Picasso.get().load(R.drawable.avatar).into(circularImageView);
-//                }
-//                try {
-//                    Picasso.get().load(photo).into(circular);
-//                }
-//                catch (Exception e ){
-//                    Picasso.get().load(R.drawable.avatar).into(circular);
-//                }
-//
-//                String dbBio = Objects.requireNonNull(dataSnapshot.child("bio").getValue()).toString();
-//                bio.setText(dbBio);
-//                String dbLink = Objects.requireNonNull(dataSnapshot.child("link").getValue()).toString();
-//                link.setText(dbLink);
-//                String dbLocation = Objects.requireNonNull(dataSnapshot.child("location").getValue()).toString();
-//                location.setText(dbLocation);
-//
-//
-//                String ed_text = bio.getText().toString().trim();
-//                if(ed_text.length() > 0)
-//                {
-//                    bio_layout.setVisibility(View.VISIBLE);
-//
-//                }
-//                else
-//                {
-//                    bio_layout.setVisibility(View.GONE);
-//                }
-//                String ed_link = link.getText().toString().trim();
-//
-//                if(ed_link.length() > 0)
-//                {
-//                    web_layout.setVisibility(View.VISIBLE);
-//
-//                }
-//                else
-//                {
-//                    web_layout.setVisibility(View.GONE);
-//                }
-//
-//                String ed_location = location.getText().toString().trim();
-//
-//                if(ed_location.length() > 0)
-//                {
-//                    location_layout.setVisibility(View.VISIBLE);
-//
-//                }
-//                else
-//                {
-//                    location_layout.setVisibility(View.GONE);
-//                }
-//
-//                pb.setVisibility(View.GONE);
-//                constraintLayout.setVisibility(View.VISIBLE);
-//                post.setVisibility(View.VISIBLE);
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//                Alerter.create(requireActivity())
-//                        .setTitle("Error")
-//                        .setIcon(R.drawable.ic_error)
-//                        .setBackgroundColorRes(R.color.colorPrimary)
-//                        .setDuration(10000)
-//                        .enableSwipeToDismiss()
-//                        .setText(databaseError.getMessage())
-//                        .show();
-//                pb.setVisibility(View.GONE);
-//
-//            }
-//        });
 
         postList= new ArrayList<>();
         loadPost();
@@ -303,11 +185,11 @@ public class ProfileFragment extends Fragment {
 
     }
     private void fetchProfile(){
-        userApiClient.fetchUser(userIdd, new Callback<User>() {
+        userApiClient.fetchUser(userIdd, new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         String dbBio = user.getBio();
                         String dbLink = user.getLink();
@@ -322,29 +204,33 @@ public class ProfileFragment extends Fragment {
                         bio.setText(dbBio);
                         link.setText(dbLink);
                         location.setText(dbLocation);
+                        if (photoUrl.isEmpty()) {
+                          circularImageView.setImageResource(R.drawable.avatar);
+                        }else {
 
-                        try {
-                            Glide.with(getActivity())
-                                    .load(photoUrl)
-                                    .apply(new RequestOptions()
-                                            )  // Set the error placeholder
-                                    .into(circularImageView);
-                        } catch (Exception e) {
-                            Glide.with(getActivity())
-                                    .load(R.drawable.avatar)
-                                    .into(circularImageView);
-                        }
+                            try {
+                                Glide.with(getActivity())
+                                        .load(photoUrl)
+                                        .apply(new RequestOptions()
+                                        )  // Set the error placeholder
+                                        .into(circularImageView);
+                            } catch (Exception e) {
+                                Glide.with(getActivity())
+                                        .load(R.drawable.avatar)
+                                        .into(circularImageView);
+                            }
 
-                        try {
-                            Glide.with(getActivity())
-                                    .load(photoUrl)
-                                    .apply(new RequestOptions()
-                                            .error(R.drawable.avatar))  // Set the error placeholder
-                                    .into(circular);
-                        } catch (Exception e) {
-                            Glide.with(getActivity())
-                                    .load(R.drawable.avatar)
-                                    .into(circular);
+                            try {
+                                Glide.with(getActivity())
+                                        .load(photoUrl)
+                                        .apply(new RequestOptions()
+                                                .error(R.drawable.avatar))  // Set the error placeholder
+                                        .into(circular);
+                            } catch (Exception e) {
+                                Glide.with(getActivity())
+                                        .load(R.drawable.avatar)
+                                        .into(circular);
+                            }
                         }
                         String ed_text = bio.getText().toString().trim();
                         if(ed_text.length() > 0)
@@ -393,7 +279,7 @@ public class ProfileFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 showError(t);
             }
         });
@@ -515,41 +401,4 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-//    private void loadPost() {
-//        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-//        layoutManager.setReverseLayout(true);
-//        layoutManager.setStackFromEnd(true);
-//        recyclerView.setLayoutManager(layoutManager);
-//        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-//        Query query = ref.orderByChild("id").equalTo(userId).limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-//        query.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                postList.clear();
-//                for (DataSnapshot ds: dataSnapshot.getChildren()){
-//                    ModelPost modelPost = ds.getValue(ModelPost.class);
-//                    postList.add(modelPost);
-//                    adapterPost = new AdapterPost(getActivity(), postList);
-//                    recyclerView.setAdapter(adapterPost);
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
 }

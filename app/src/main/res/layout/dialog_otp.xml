@@ -1,0 +1,44 @@
+<!-- dialog_otp.xml -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/rounded_corner_background"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Check your email For the OTP"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <com.mukesh.OtpView
+        android:id="@+id/otp_input"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:inputType="number"
+        android:itemBackground="#ACAAAA"
+        android:focusableInTouchMode="true"
+        app:OtpItemCount="6"
+        app:OtpLineColor="@color/green_200"
+        app:OtpViewType="line" />
+
+    <Button
+        android:id="@+id/verify_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/button_background"
+        android:text="Verify OTP"
+        android:textColor="@android:color/white"
+        android:textSize="16sp" />
+
+</LinearLayout>

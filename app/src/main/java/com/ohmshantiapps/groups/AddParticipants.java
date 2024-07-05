@@ -39,7 +39,7 @@ public class AddParticipants extends AppCompatActivity {
     ImageView imageView3;
     EditText editText;
 
-    //User
+    //Users
     AdapterParticipants adapterParticipants;
     List<ModelUser> userList;
     SharedPref sharedPref;
@@ -61,7 +61,7 @@ public class AddParticipants extends AppCompatActivity {
         groupId = getIntent().getStringExtra("groupId");
         loadGroupInfo();
 
-        //User
+        //Users
         group_rv.setHasFixedSize(true);
         group_rv.setLayoutManager(new LinearLayoutManager(AddParticipants.this));
         userList = new ArrayList<>();

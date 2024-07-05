@@ -5,17 +5,16 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -29,17 +28,9 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.ohmshantiapps.Adpref;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
@@ -48,7 +39,7 @@ import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UserApiClient;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 import com.squareup.picasso.Picasso;
 import com.tapadoo.alerter.Alerter;
 
@@ -57,7 +48,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -92,6 +82,7 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
     UserApiClient userApiClient;
     ApiService userApi;
     String photoUrl;
+    TextView name,username,bio,link,location;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,6 +92,11 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
         }else setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
+        name = findViewById(R.id.name);
+        username = findViewById(R.id.username);
+        bio = findViewById(R.id.bio);
+        link = findViewById(R.id.link);
+        location = findViewById(R.id.location);
 
         userApiClient = new UserApiClient();
         userApi = RetrofitClient.getClient().create(ApiService.class);
@@ -217,7 +213,7 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
 
                                 }
 
-                                User userUpdateRequest = new User(Integer.parseInt(userId), null, null,null,null,null,null,imageUrl,null,null,null,true,null,null);
+                                Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,null,null,imageUrl,null,null,null,true,null,null);
                                 ModelPost modelPost = new ModelPost(imageUrl,userId,null,null,null,null,null,null,null,null,null,null);
                                 Call<Void> call2 = userApi.updateModelPost(Integer.parseInt(userId),modelPost);
                                 call2.enqueue(new Callback<Void>() {
@@ -302,15 +298,20 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
         super.finish();
     }
     private void fetchuserprofile(){
-        userApiClient.fetchUser(Integer.parseInt(userId), new Callback<User>() {
+        userApiClient.fetchUser(Integer.parseInt(userId), new Callback<Users>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Users> call, Response<Users> response) {
                 if (response.isSuccessful()) {
-                    User user = response.body();
+                    Users user = response.body();
                     if (user != null) {
                         String userName = user.getName();
                         String userEmail = user.getEmail();
                         photoUrl = user.getPhoto();
+                        name.setText(userName);
+                        username.setText(user.getUsername());
+                        bio.setText(user.getBio());
+                        link.setText(user.getLink());
+                        location.setText(user.getLocation());
 
                         try {
                             Glide.with(EditProfile.this)
@@ -340,7 +341,7 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<Users> call, Throwable t) {
                 // Show a toast message indicating the failure
                 showError(t);
             }
@@ -380,16 +381,15 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
 
 
 
-//                               Toast.makeText(EditProfile.this, "Image deleted successfully.", Toast.LENGTH_SHORT).show();
                             } else {
-//                                Toast.makeText(EditProfile.this, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(EditProfile.this, "Failed to delete image.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
-//                            Toast.makeText(EditProfile.this, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(EditProfile.this, "Failed to delete image.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-//                        Toast.makeText(EditProfile.this, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EditProfile.this, "Failed to delete image.", Toast.LENGTH_SHORT).show();
                     }
                     pb.setVisibility(View.GONE);
                 });
@@ -505,7 +505,7 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
 
             deleteImage(photoUrl);
 
-            User userUpdateRequest = new User(Integer.parseInt(userId), null, null,null,null,null,null,"no",null,null,null,true,null,null);
+            Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,null,null,"no",null,null,null,true,null,null);
             ModelPost modelPost = new ModelPost("no",userId,null,null,null,null,null,null,null,null,null,null);
             Call<Void> call2 = userApi.updateModelPost(Integer.parseInt(userId),modelPost);
             call2.enqueue(new Callback<Void>() {

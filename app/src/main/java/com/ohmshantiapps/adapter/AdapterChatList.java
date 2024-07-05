@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ohmshantiapps.R;
-import com.ohmshantiapps.model.ModelUser;
+import com.ohmshantiapps.model.Users;
 import com.ohmshantiapps.shareChat.Chat;
 import com.squareup.picasso.Picasso;
 
@@ -24,10 +24,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class AdapterChatList extends RecyclerView.Adapter<AdapterChatList.MyHolder> {
 
     final Context context;
-    final List<ModelUser> userList;
+    final List<Users> userList;
     private final HashMap<String, String> lastMessageMap;
 
-    public AdapterChatList(Context context, List<ModelUser> userList) {
+    public AdapterChatList(Context context, List<Users> userList) {
         this.context = context;
         this.userList = userList;
      lastMessageMap = new HashMap<>();
@@ -43,7 +43,7 @@ public class AdapterChatList extends RecyclerView.Adapter<AdapterChatList.MyHold
     @Override
     public void onBindViewHolder(@NonNull MyHolder holder, int position) {
 
-        String hisUid = userList.get(position).getId();
+        String hisUid = String.valueOf(userList.get(position).getId());
         String dp = userList.get(position).getPhoto();
         String name = userList.get(position).getName();
         String lastMessage = lastMessageMap.get(hisUid);
@@ -72,7 +72,6 @@ public class AdapterChatList extends RecyclerView.Adapter<AdapterChatList.MyHold
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, Chat.class);
-            intent.putExtra("userid", hisUid);
             intent.putExtra("hisUid", id);
             context.startActivity(intent);
         });

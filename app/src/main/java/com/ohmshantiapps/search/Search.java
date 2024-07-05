@@ -20,8 +20,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -30,7 +28,6 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
-import com.ohmshantiapps.adapter.AdapterChatUsers;
 import com.ohmshantiapps.adapter.AdapterGroups;
 import com.ohmshantiapps.adapter.AdapterPost;
 import com.ohmshantiapps.adapter.AdapterUsers;
@@ -39,7 +36,7 @@ import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelGroups;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.ModelUser;
-import com.ohmshantiapps.model.User;
+import com.ohmshantiapps.model.Users;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +56,7 @@ public class Search extends AppCompatActivity {
     ProgressBar pg;
     SharedPref sharedPref;
     ImageView imageView3;
-    //User
+    //Users
     AdapterUsers adapterUsers;
     List<ModelUser> userList;
     //Post
@@ -89,11 +86,11 @@ public class Search extends AppCompatActivity {
         groups_rv = findViewById(R.id.groups_rv);
         users = findViewById(R.id.users);
         post = findViewById(R.id.post);
-        groups = findViewById(R.id.groups);
+//        groups = findViewById(R.id.groups);
         imageView3 = findViewById(R.id.imageView3);
         userly = findViewById(R.id.userly);
         postly = findViewById(R.id.postly);
-        groupsly = findViewById(R.id.groupsly);
+//        groupsly = findViewById(R.id.groupsly);
         pg = findViewById(R.id.pg);
         pg.setVisibility(View.VISIBLE);
         Intent intent = getIntent();
@@ -163,7 +160,7 @@ public class Search extends AppCompatActivity {
 
                 if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
                     mCurrenPage++;
-                    getAllUsers();
+//                    getAllUsers();
                 }
             }
         });
@@ -183,7 +180,7 @@ public class Search extends AppCompatActivity {
         });
 
 
-        //User
+        //Users
         users_rv.setLayoutManager(new LinearLayoutManager(Search.this));
         userList = new ArrayList<>();
         getAllUsers();
@@ -321,15 +318,15 @@ public class Search extends AppCompatActivity {
     }
 
     private void filterUser(String query) {
-        Call<List<User>> call = apiInterface.getUsers();
-        call.enqueue(new Callback<List<User>>() {
+        Call<List<Users>> call = apiInterface.getUsers();
+        call.enqueue(new Callback<List<Users>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
-                    List<User> userList = response.body();
+                    List<Users> userList = response.body();
                     if (userList != null && !userList.isEmpty()) {
-                        List<User> filteredUsers = new ArrayList<>();
-                        for (User user : userList) {
+                        List<Users> filteredUsers = new ArrayList<>();
+                        for (Users user : userList) {
                             if ((user.getName() != null && user.getName().toLowerCase().contains(query.toLowerCase())) ||
                                     (user.getUsername() != null && user.getUsername().toLowerCase().contains(query.toLowerCase()))) {
                                 filteredUsers.add(user);
@@ -351,7 +348,7 @@ public class Search extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onFailure(Call<List<Users>> call, Throwable t) {
                 Toast.makeText(Search.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 // Handle network error
             }
@@ -431,12 +428,12 @@ public class Search extends AppCompatActivity {
     }
 
     private void getAllUsers() {
-        Call<List<User>> call = apiInterface.getUsers();
-        call.enqueue(new Callback<List<User>>() {
+        Call<List<Users>> call = apiInterface.getUsers();
+        call.enqueue(new Callback<List<Users>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
-                    List<User> userList = response.body();
+                    List<Users> userList = response.body();
                     adapterUsers = new AdapterUsers(Search.this, userList);
                     users_rv.setAdapter(adapterUsers);
                     pg.setVisibility(View.GONE);
@@ -447,7 +444,7 @@ public class Search extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onFailure(Call<List<Users>> call, Throwable t) {
                 // Handle network error
             }
         });
