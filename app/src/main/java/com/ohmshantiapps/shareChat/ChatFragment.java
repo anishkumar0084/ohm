@@ -9,8 +9,10 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
@@ -24,8 +26,12 @@ import com.google.firebase.database.ValueEventListener;
 import com.ohmshantiapps.Adpref;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.adapter.AdapterChatList;
+import com.ohmshantiapps.adapter.AdapterPost;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.model.ModelChat;
 import com.ohmshantiapps.model.ModelChatlist;
+import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.ModelUser;
 import com.ohmshantiapps.search.ProfileSearch;
 
@@ -37,11 +43,10 @@ public class ChatFragment extends Fragment {
 
     ImageView search;
     RecyclerView recyclerView;
-    List<ModelChatlist> chatlistList;
-    List<ModelUser> userList;
-    DatabaseReference reference;
-    FirebaseUser currentUser;
-    AdapterChatList adapterChatList;
+    AdapterPost adapterPost;
+    List<ModelPost> postList;
+    ApiService apiInterface;
+    ShimmerFrameLayout shimmerFrameLayout;
 
     public ChatFragment() {
     }
@@ -49,126 +54,40 @@ public class ChatFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_chat, container, false);
         search =view.findViewById(R.id.imageView4);
+        apiInterface = RetrofitClient.getClient().create(ApiService.class);
         search.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), ProfileSearch.class);
             startActivity(intent);
         });
+        postList = new ArrayList<>();
         recyclerView = view.findViewById(R.id.recyclerView);
 
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        chatlistList = new ArrayList<>();
-        reference = FirebaseDatabase.getInstance().getReference("Chatlist").child(currentUser.getUid());
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        layoutManager.setStackFromEnd(true);
+        layoutManager.setReverseLayout(true);
+        recyclerView.setLayoutManager(layoutManager);
 
-        MobileAds.initialize(getContext(), initializationStatus -> {
-        });
-        AdView mAdView = view.findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
+        shimmerFrameLayout = view.findViewById(R.id.shimmer);
+        shimmerFrameLayout.startShimmer();
 
-        Adpref adpref;
-        adpref = new Adpref(requireContext());
-        if (adpref.loadAdsModeState()){
-            mAdView.setVisibility(View.VISIBLE);
+        getAllVideo();
 
-        }
 
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                chatlistList.clear();
-                for (DataSnapshot ds: snapshot.getChildren()){
-                    ModelChatlist chatlist = ds.getValue(ModelChatlist.class);
-                    chatlistList.add(chatlist);
-                }
-                loadChats();
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
 
-            }
-        });
 
         return view;
     }
 
-    private void loadChats() {
-        userList = new ArrayList<>();
-        reference = FirebaseDatabase.getInstance().getReference("Users");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                userList.clear();
-                for (DataSnapshot ds: snapshot.getChildren()){
-                    ModelUser user = ds.getValue(ModelUser.class);
-                    for (ModelChatlist chatlist: chatlistList){
-                        if (Objects.requireNonNull(user).getId() != null && user.getId().equals(chatlist.getId())){
-                            userList.add(user);
-                            break;
-                        }
-                    }
-//                    adapterChatList = new AdapterChatList(getContext(), userList);
-                    recyclerView.setAdapter(adapterChatList);
-                    for (int i=0; i<userList.size(); i++){
-                        lastMessage(userList.get(i).getId());
-                    }
+    private void getAllVideo() {
 
-                }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
     }
-
-    private void lastMessage(String userId) {
-//        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Chats");
-//        reference.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                String theLastMessage = "default";
-//                for (DataSnapshot ds: snapshot.getChildren()){
-//                    ModelChat chat = ds.getValue(ModelChat.class);
-//                    if (chat == null){
-//                        continue;
-//                    }
-//                    String sender = chat.getSender();
-//                    String receiver = chat.getReceiver();
-//                    if(sender == null || receiver == null){
-//                        continue;
-//                    }
-//                    if (chat.getReceiver().equals(currentUser.getUid()) && chat.getSender().equals(userId) || chat.getReceiver().equals(userId) && chat.getSender().equals(currentUser.getUid())){
-//                        switch (chat.getType()) {
-//                            case "image":
-//                                theLastMessage = "Sent a photo";
-//                                break;
-//                            case "video":
-//                                theLastMessage = "Sent a video";
-//                                break;
-//                            case "post":
-//                                theLastMessage = "Sent a post";
-//                                break;
-//                            default:
-//                                theLastMessage = chat.getMessage();
-//                                break;
-//                        }
-//                    }
-//                }
-//                adapterChatList.notifyDataSetChanged();
-//                adapterChatList.setLastMessageMap(userId, theLastMessage);
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError error) {
-//
-//            }
-//        });
-    }
-
-
 }
+
+
+
+
+

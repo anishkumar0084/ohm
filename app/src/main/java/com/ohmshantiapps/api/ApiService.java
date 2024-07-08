@@ -158,6 +158,15 @@ public interface ApiService {
             @Field("action") String action
     );
 
+    @FormUrlEncoded
+    @POST("genlink.php")
+    Call<UniqueLinkResponse> generateUniqueLink(@Field("post_id") Long postId);
+
+
+    @GET("genlink.php")
+    Call<UniqueLinkResponse> getUniqueLink(@Query("post_id") Long postId);
+
+
 
 
 

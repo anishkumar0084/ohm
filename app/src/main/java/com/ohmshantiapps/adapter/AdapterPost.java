@@ -60,6 +60,7 @@ import com.ohmshantiapps.api.DeleteResponse;
 import com.ohmshantiapps.api.LikeResponse;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
+import com.ohmshantiapps.api.UniqueLinkResponse;
 import com.ohmshantiapps.groups.ShareGroupActivity;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.post.PostDetails;
@@ -72,7 +73,6 @@ import com.ohmshantiapps.user.UserProfile;
 import com.ohmshantiapps.welcome.GetTimeAgo;
 import com.pedromassango.doubleclick.DoubleClick;
 import com.pedromassango.doubleclick.DoubleClickListener;
-import com.squareup.picasso.Callback;
 import com.squareup.picasso.OkHttp3Downloader;
 import com.squareup.picasso.Picasso;
 import com.volokh.danylo.hashtaghelper.HashTagHelper;
@@ -94,6 +94,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 
 @SuppressWarnings("ALL")
@@ -148,6 +149,8 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         SessionManager sessionManager = new SessionManager(context);
 
         userId =sessionManager.getUserId();
+
+
         //Time
         GetTimeAgo getTimeAgo = new GetTimeAgo();
         long lastTime = Long.parseLong(pTime);
@@ -158,10 +161,21 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         holder.pText.setText(text);
         holder.pType.setText(type);
 
-        if (!(pViews ==null)) {
-            String pview = formatViews(Long.parseLong(pViews));
-            holder.views.setText(pview);
+        if (pViews == null || pViews.isEmpty()) {
+            holder.views.setText("0");
+        } else {
+            try {
+                long views = Long.parseLong(pViews);
+                String formattedViews = formatViews(views);
+                holder.views.setText(formattedViews);
+            } catch (NumberFormatException e) {
+                holder.views.setText("0");
+            }
         }
+
+
+
+
         setLikes(holder, pId);
         setViews(holder, pId);
         String ed_text = holder.pText.getText().toString().trim();
@@ -317,6 +331,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             }
         }
 
+
         holder.video_share.setOnClickListener(v -> vidshareMoreOptions(holder.video_share, pId,vine,text));
 
 
@@ -430,6 +445,26 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
     }
 
+    private void geneartelink(String pId) {
+        Call<UniqueLinkResponse> call = apiService.generateUniqueLink(Long.parseLong(pId));
+        call.enqueue(new Callback<UniqueLinkResponse>() {
+            @Override
+            public void onResponse(Call<UniqueLinkResponse> call, Response<UniqueLinkResponse> response) {
+                if (response.isSuccessful()){
+                    Toast.makeText(context, "Link Generated", Toast.LENGTH_SHORT).show();
+                }else {
+                    Toast.makeText(context, "Failed to generate link", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UniqueLinkResponse> call, Throwable throwable) {
+                Toast.makeText(context, "Failed to generate link"+throwable.getMessage(), Toast.LENGTH_SHORT).show();
+
+            }
+        });
+    }
+
     private void noComment(int position,MyHolder holder){
         String postId = String.valueOf(postList.get(position).getpId());
 
@@ -514,6 +549,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 context.startActivity(intent);
 
             }else if (id==1){
+
                 Intent intent2 = new Intent(Intent.ACTION_SEND);
                 intent2.setType("text/*");
                 intent2.putExtra(Intent.EXTRA_SUBJECT,"Subject Here");
@@ -531,6 +567,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     private void shareMoreOptions(RelativeLayout share, MyHolder holder, String pId) {
         PopupMenu popupMenu = new PopupMenu(context, share, Gravity.END);
 
+
         popupMenu.getMenu().add(Menu.NONE,0,0, "In chats");
         popupMenu.getMenu().add(Menu.NONE,1,0, "In groups");
         popupMenu.getMenu().add(Menu.NONE,2,0, "To apps");
@@ -541,9 +578,10 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 intent.putExtra("postId", pId);
                 context.startActivity(intent);
             }else if (id==1){
-                Intent intent = new Intent(context, ShareGroupActivity.class);
-                intent.putExtra("postId", pId);
-                context.startActivity(intent);
+//                Intent intent = new Intent(context, ShareGroupActivity.class);
+//                intent.putExtra("postId", pId);
+//                context.startActivity(intent);
+                geneartelink(pId);
             }
             else if (id==2){
                 String shareText = holder.pText.getText().toString().trim();
@@ -551,8 +589,30 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 if (bitmapDrawable == null) {
                     shareTextOnly(shareText);
                 } else {
-                    Bitmap bitmap = bitmapDrawable.getBitmap();
-                    shareImageAndText(shareText, bitmap);
+
+
+
+
+                    Call<UniqueLinkResponse> call = apiService.getUniqueLink(Long.parseLong(pId));
+                    call.enqueue(new Callback<UniqueLinkResponse>() {
+                        @Override
+                        public void onResponse(Call<UniqueLinkResponse> call, Response<UniqueLinkResponse> response) {
+                            if (response.isSuccessful()){
+                            String uniqueLink = response.body().getUniqueLink();
+                            shareImageAndText(uniqueLink);
+
+                            }else {
+                                Toast.makeText(context, "Failed to get link", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<UniqueLinkResponse> call, Throwable throwable) {
+                            Toast.makeText(context, "Failed to get link"+throwable.getMessage(), Toast.LENGTH_SHORT).show();
+
+                        }
+                    });
+
                 }
             }
 
@@ -562,14 +622,11 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
 
-    private void shareImageAndText(String text, Bitmap bitmap) {
-        Uri uri = saveImageToShare(bitmap);
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_STREAM, uri);
-        intent.putExtra(Intent.EXTRA_TEXT, text);
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here");
-        intent.setType("image/*");
-        context.startActivity(Intent.createChooser(intent, "Share Via"));
+    private void shareImageAndText(String text) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, text);
+        context.startActivity(Intent.createChooser(shareIntent, "Share Post Link"));
     }
 
     private Uri saveImageToShare(Bitmap bitmap) {

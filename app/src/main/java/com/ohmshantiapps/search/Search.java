@@ -15,276 +15,144 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
+import com.cooltechworks.views.shimmer.ShimmerRecyclerView;
+import com.facebook.shimmer.ShimmerFrameLayout;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
-import com.ohmshantiapps.adapter.AdapterGroups;
 import com.ohmshantiapps.adapter.AdapterPost;
 import com.ohmshantiapps.adapter.AdapterUsers;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.RetrofitClient;
-import com.ohmshantiapps.model.ModelGroups;
 import com.ohmshantiapps.model.ModelPost;
-import com.ohmshantiapps.model.ModelUser;
 import com.ohmshantiapps.model.Users;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-@SuppressWarnings("NullableProblems")
 public class Search extends AppCompatActivity {
 
-    EditText editText;
-    RecyclerView users_rv,posts_rv,groups_rv;
-    TextView users,post,groups;
-    RelativeLayout userly,postly,groupsly;
-    ProgressBar pg;
-    SharedPref sharedPref;
-    ImageView imageView3;
-    //Users
-    AdapterUsers adapterUsers;
-    List<ModelUser> userList;
-    //Post
-    AdapterPost adapterPost;
-    List<ModelPost> postList;
-    AdapterGroups adapterGroups;
-    List<ModelGroups> modelGroupsList;
-    private static final int TOTAL_ITEMS_TO_LOAD = 7;
-    private int mCurrenPage = 1;
-    ApiService apiInterface;
+    private EditText editText;
+    private RecyclerView posts_rv;
+    private ShimmerRecyclerView users_rv;
+    private ShimmerFrameLayout postsg;
+    private TextView users, post;
+    private RelativeLayout userly, postly;
+    private ProgressBar pg;
+    private ImageView imageView3;
+    private SharedPref sharedPref;
+
+    private AdapterUsers adapterUsers;
+    private List<Users> userList;
+
+    private AdapterPost adapterPost;
+    private List<ModelPost> postList;
+    private ApiService apiInterface;
 
     @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         sharedPref = new SharedPref(this);
-        if (sharedPref.loadNightModeState()){
+        if (sharedPref.loadNightModeState()) {
             setTheme(R.style.DarkTheme);
-        }else setTheme(R.style.AppTheme);
+        } else {
+            setTheme(R.style.AppTheme);
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
 
+        postsg = findViewById(R.id.shimmer);
         apiInterface = RetrofitClient.getClient().create(ApiService.class);
 
         editText = findViewById(R.id.password);
         users_rv = findViewById(R.id.users_rv);
         posts_rv = findViewById(R.id.posts_rv);
-        groups_rv = findViewById(R.id.groups_rv);
         users = findViewById(R.id.users);
         post = findViewById(R.id.post);
-//        groups = findViewById(R.id.groups);
         imageView3 = findViewById(R.id.imageView3);
         userly = findViewById(R.id.userly);
         postly = findViewById(R.id.postly);
-//        groupsly = findViewById(R.id.groupsly);
         pg = findViewById(R.id.pg);
+
         pg.setVisibility(View.VISIBLE);
+        users_rv.showShimmerAdapter();
+
         Intent intent = getIntent();
-
-        if (intent.hasExtra("hashTag")){
+        if (intent.hasExtra("hashTag")) {
             String tag = getIntent().getStringExtra("hashTag");
-            editText.setText("#"+tag);
+            editText.setText("#" + tag);
         }
-
-        getAllPost();
-
-
-
-
 
         imageView3.setOnClickListener(v -> onBackPressed());
 
         users.setTextColor(Color.parseColor("#0047ab"));
-
-        groupsly.setOnClickListener(v -> {
-            users.setTextColor(Color.parseColor("#161F3D"));
-            groups.setTextColor(Color.parseColor("#0047ab"));
-            post.setTextColor(Color.parseColor("#161F3D"));
-            users_rv.setVisibility(View.GONE);
-            posts_rv.setVisibility(View.GONE);
-            groups_rv.setVisibility(View.VISIBLE);
-        });
+        posts_rv.setVisibility(View.GONE);
 
         postly.setOnClickListener(v -> {
             users.setTextColor(Color.parseColor("#161F3D"));
-            groups.setTextColor(Color.parseColor("#161F3D"));
             post.setTextColor(Color.parseColor("#0047ab"));
             users_rv.setVisibility(View.GONE);
+            postsg.setVisibility(View.VISIBLE);
+            postsg.startShimmer();
             posts_rv.setVisibility(View.VISIBLE);
-            groups_rv.setVisibility(View.GONE);
+            getAllPost();  // Call this to ensure data is fetched when switching to Posts view
         });
+
         userly.setOnClickListener(v -> {
             users.setTextColor(Color.parseColor("#0047ab"));
             post.setTextColor(Color.parseColor("#161F3D"));
-            groups.setTextColor(Color.parseColor("#161F3D"));
             users_rv.setVisibility(View.VISIBLE);
             posts_rv.setVisibility(View.GONE);
-            groups_rv.setVisibility(View.GONE);
+            postsg.setVisibility(View.GONE);
+            postsg.stopShimmer();  // Ensure shimmer stops when switching to Users view
         });
 
-
-
-
-        posts_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getAllPost();
-                }
-            }
-        });
-
-
-
-        users_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-//                    getAllUsers();
-                }
-            }
-        });
-
-
-
-        groups_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
-                    mCurrenPage++;
-                    getAllGroups();
-                }
-            }
-        });
-
-
-        //Users
-        users_rv.setLayoutManager(new LinearLayoutManager(Search.this));
+        users_rv.setLayoutManager(new LinearLayoutManager(this));
         userList = new ArrayList<>();
         getAllUsers();
-        //Post
-        posts_rv.setLayoutManager(new LinearLayoutManager(Search.this));
+
+        posts_rv.setLayoutManager(new LinearLayoutManager(this));
         postList = new ArrayList<>();
-        //Groups
-        groups_rv.setLayoutManager(new LinearLayoutManager(Search.this));
-        modelGroupsList = new ArrayList<>();
-        getAllGroups();
+        getAllPost();
 
         editText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (!TextUtils.isEmpty(s.toString())){
+                if (!TextUtils.isEmpty(s.toString())) {
                     pg.setVisibility(View.VISIBLE);
                     filterUser(s.toString());
                     filterPost(s.toString());
-                    filterGroups(s.toString());
-                }else {
+                } else {
                     getAllUsers();
                     getAllPost();
-                    getAllGroups();
                 }
-
-            }
-        });
-
-
-
-
-    }
-
-    private void filterGroups(String query) {
-
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Groups");
-        Query q = ref.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-        q.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                modelGroupsList.clear();
-                for (DataSnapshot ds: dataSnapshot.getChildren()){
-                    ModelGroups modelGroups = ds.getValue(ModelGroups.class);
-                    if (Objects.requireNonNull(modelGroups).getgName().toLowerCase().contains(query.toLowerCase()) || modelGroups.getgUsername().contains(query.toLowerCase()) ){
-                        modelGroupsList.add(modelGroups);
-                    }
-                    adapterGroups = new AdapterGroups(Search.this, modelGroupsList);
-                    groups_rv.setAdapter(adapterGroups);
-                    adapterGroups.notifyDataSetChanged();
-                    pg.setVisibility(View.GONE);
-
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-    }
-
-    private void getAllGroups() {
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Groups");
-        Query q = ref.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-        q.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                modelGroupsList.clear();
-                for (DataSnapshot ds: dataSnapshot.getChildren()){
-                    ModelGroups modelGroups = ds.getValue(ModelGroups.class);
-                    modelGroupsList.add(modelGroups);
-                    adapterGroups = new AdapterGroups(Search.this, modelGroupsList);
-                    groups_rv.setAdapter(adapterGroups);
-                    pg.setVisibility(View.GONE);
-
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
             }
         });
     }
 
     private void filterPost(String query) {
-        Call<List<ModelPost>> postsCall = apiInterface.getAllPosts(); // Modify API call to get all posts
+        Call<List<ModelPost>> postsCall = apiInterface.getAllPosts();
         postsCall.enqueue(new Callback<List<ModelPost>>() {
             @Override
-            public void onResponse(Call<List<ModelPost>> call, retrofit2.Response<List<ModelPost>> response) {
+            public void onResponse(Call<List<ModelPost>> call, Response<List<ModelPost>> response) {
                 if (response.isSuccessful()) {
+                    postsg.stopShimmer();
+                    postsg.setVisibility(View.GONE);
                     List<ModelPost> posts = response.body();
                     if (posts != null && !posts.isEmpty()) {
-                        // Filter posts based on the query
                         List<ModelPost> filteredPosts = new ArrayList<>();
                         for (ModelPost post : posts) {
                             if ((post.getText() != null && post.getText().toLowerCase().contains(query.toLowerCase())) ||
@@ -292,27 +160,20 @@ public class Search extends AppCompatActivity {
                                 filteredPosts.add(post);
                             }
                         }
-
                         postList.clear();
                         postList.addAll(filteredPosts);
 
-                        // Set adapter and notify changes
                         adapterPost = new AdapterPost(Search.this, postList);
                         posts_rv.setAdapter(adapterPost);
                         pg.setVisibility(View.GONE);
                         adapterPost.notifyDataSetChanged();
-                    } else {
-                        // Handle case where no posts are available
                     }
-                } else {
-                    // Handle unsuccessful response
                 }
             }
 
             @Override
             public void onFailure(Call<List<ModelPost>> call, Throwable t) {
-                Toast.makeText(Search.this, "Network error: ", Toast.LENGTH_SHORT).show();
-                // Handle failure
+                Toast.makeText(Search.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -323,6 +184,7 @@ public class Search extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
+                    users_rv.hideShimmerAdapter();
                     List<Users> userList = response.body();
                     if (userList != null && !userList.isEmpty()) {
                         List<Users> filteredUsers = new ArrayList<>();
@@ -330,99 +192,52 @@ public class Search extends AppCompatActivity {
                             if ((user.getName() != null && user.getName().toLowerCase().contains(query.toLowerCase())) ||
                                     (user.getUsername() != null && user.getUsername().toLowerCase().contains(query.toLowerCase()))) {
                                 filteredUsers.add(user);
-                                pg.setVisibility(View.GONE);
                             }
                         }
 
-                        // Update RecyclerView with filtered users
                         adapterUsers = new AdapterUsers(Search.this, filteredUsers);
                         users_rv.setAdapter(adapterUsers);
                         pg.setVisibility(View.GONE);
                         adapterUsers.notifyDataSetChanged();
-                    } else {
-                        // Handle case where no users are available
                     }
-                } else {
-                    // Handle unsuccessful response
                 }
             }
 
             @Override
             public void onFailure(Call<List<Users>> call, Throwable t) {
                 Toast.makeText(Search.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                // Handle network error
             }
         });
     }
 
-//
-//    private void filterUser(String query) {
-//
-//        final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-//        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("Users");
-//        Query q = databaseReference.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-//        q.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                userList.clear();
-//                for (DataSnapshot ds: dataSnapshot.getChildren()){
-//                    ModelUser modelUser = ds.getValue(ModelUser.class);
-//                    if (!Objects.requireNonNull(firebaseUser).getUid().equals(Objects.requireNonNull(modelUser).getId())){
-//                        if (modelUser.getName().toLowerCase().contains(query.toLowerCase()) ||
-//                                modelUser.getUsername().toLowerCase().contains(query.toLowerCase())){
-//                            userList.add(modelUser);
-//                            pg.setVisibility(View.GONE);
-//                        }
-//                    }
-//                    adapterUsers = new AdapterUsers(Search.this, userList);
-//                    adapterUsers.notifyDataSetChanged();
-//                    users_rv.setAdapter(adapterUsers);
-//                    pg.setVisibility(View.GONE);
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//
-//    }
-
-
-
-
-
-
-
-
-
     private void getAllPost() {
-        Call<List<ModelPost>> postsCall = apiInterface.getAllPosts(); // Modify API call to get all posts
+        Call<List<ModelPost>> postsCall = apiInterface.getAllPosts();
         postsCall.enqueue(new Callback<List<ModelPost>>() {
             @Override
-            public void onResponse(Call<List<ModelPost>> call, retrofit2.Response<List<ModelPost>> response) {
+            public void onResponse(Call<List<ModelPost>> call, Response<List<ModelPost>> response) {
                 if (response.isSuccessful()) {
+                    postsg.stopShimmer();
+                    postsg.setVisibility(View.GONE);
                     List<ModelPost> posts = response.body();
                     if (posts != null && !posts.isEmpty()) {
+                        postList.clear();  // Clear previous data
                         postList.addAll(posts);
                         adapterPost = new AdapterPost(Search.this, postList);
                         posts_rv.setAdapter(adapterPost);
                         pg.setVisibility(View.GONE);
                         adapterPost.notifyDataSetChanged();
-                        // Handle received posts
                     } else {
-                        // Handle case where no posts are available
+                        // Handle case when no posts are available
+                        Toast.makeText(Search.this, "No posts available", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    // Handle unsuccessful response
+                    Toast.makeText(Search.this, "Failed to load posts", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<ModelPost>> call, Throwable t) {
                 Toast.makeText(Search.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                // Handle failure
             }
         });
     }
@@ -433,51 +248,26 @@ public class Search extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
                 if (response.isSuccessful()) {
+                    users_rv.hideShimmerAdapter();
                     List<Users> userList = response.body();
-                    adapterUsers = new AdapterUsers(Search.this, userList);
-                    users_rv.setAdapter(adapterUsers);
-                    pg.setVisibility(View.GONE);
-                    // Update RecyclerView with userList
+                    if (userList != null && !userList.isEmpty()) {
+                        adapterUsers = new AdapterUsers(Search.this, userList);
+                        users_rv.setAdapter(adapterUsers);
+                        pg.setVisibility(View.GONE);
+                        adapterUsers.notifyDataSetChanged();
+                    } else {
+                        // Handle case when no users are available
+                        Toast.makeText(Search.this, "No users available", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    // Handle unsuccessful response
+                    Toast.makeText(Search.this, "Failed to load users", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Users>> call, Throwable t) {
-                // Handle network error
+                Toast.makeText(Search.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
-
-
-
-//    private void getAllUsers() {
-//        final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-//        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("Users");
-//        Query q = databaseReference.limitToLast(mCurrenPage * TOTAL_ITEMS_TO_LOAD);
-//        q.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                userList.clear();
-//                for (DataSnapshot ds: dataSnapshot.getChildren()){
-//                    ModelUser modelUser = ds.getValue(ModelUser.class);
-//                    if (!Objects.requireNonNull(firebaseUser).getUid().equals(Objects.requireNonNull(modelUser).getId())){
-//                        userList.add(modelUser);
-//                        pg.setVisibility(View.GONE);
-//                    }
-//                    adapterUsers = new AdapterUsers(Search.this, userList);
-//                    users_rv.setAdapter(adapterUsers);
-//                    pg.setVisibility(View.GONE);
-//
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
-
 }

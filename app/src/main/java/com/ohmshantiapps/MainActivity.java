@@ -54,7 +54,21 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                 new HomeFragment()).commit();
 //        updateToken(FirebaseInstanceId.getInstance().getToken());
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        Uri data = intent.getData();
 
+        if (Intent.ACTION_VIEW.equals(action) && data != null) {
+            handleDeepLink(data);
+        }
+
+
+    }
+
+    private void handleDeepLink(Uri data) {
+        // Extract the information from the data Uri and handle it
+        String postId = data.getLastPathSegment();
+        // Use the postId to fetch or display the relevant content
     }
 
     private void updateToken(String token){

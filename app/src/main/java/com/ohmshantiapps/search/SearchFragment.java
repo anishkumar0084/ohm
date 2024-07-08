@@ -6,8 +6,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.Toast;
 
@@ -43,8 +46,8 @@ import retrofit2.Response;
 @SuppressWarnings("NullableProblems")
 public class SearchFragment extends Fragment implements View.OnClickListener {
 
-    ImageView imageView3;
-    ImageView search;
+    ImageView imageView3,imageP;
+    RelativeLayout search;
     RecyclerView posts_rv, likes_rv, views_rv, comment_rv, meme_rv, vines_rv;
     ProgressBar pg;
     BottomSheetDialog bottomSheetDialog;
@@ -58,6 +61,7 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
     private int totalPageCount = 5;
 
     private int mCurrenPage = 1;
+    Button texts;;
 
 
     ApiService userApi;
@@ -70,8 +74,10 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
 
         posts_rv = view.findViewById(R.id.post_rvk);
 
-        search = view.findViewById(R.id.imageView6);
-//        imageView3= view.findViewById(R.id.imageView3);
+        search = view.findViewById(R.id.relativeLayout4);
+        imageView3= view.findViewById(R.id.imageView3);
+        imageP=view.findViewById(R.id.img_password);
+        texts=view.findViewById(R.id.password);
 
         userApi = RetrofitClient.getClient().create(ApiService.class);
 
@@ -84,11 +90,26 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
 
         shimmerFrameLayout = view.findViewById(R.id.shimmer);
         shimmerFrameLayout.startShimmer();
+        posts_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+
+                if (!recyclerView.canScrollVertically(1) && newState==RecyclerView.SCROLL_STATE_IDLE) {
+                    mCurrenPage++;
+//                    checkFollowing();
+                }
+            }
+        });
+
+
 //        likes_rv = view.findViewById(R.id.likes_rv);
 //        views_rv = view.findViewById(R.id.views_rv);
 //        comment_rv = view.findViewById(R.id.comment_rv);
 //        meme_rv = view.findViewById(R.id.meme_rv);
 //        vines_rv = view.findViewById(R.id.vines_rv);
+
+
 
 //        likes_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
 //            @Override
@@ -152,7 +173,23 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
             Intent intent = new Intent(getActivity(), Search.class);
             startActivity(intent);
         });
-//        imageView3.setOnClickListener(v -> bottomSheetDialog.show());
+        imageP.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getActivity(), Search.class);
+                startActivity(intent);
+
+            }
+        });
+        texts.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getActivity(), Search.class);
+                startActivity(intent);
+
+            }
+        });
+        imageView3.setOnClickListener(v -> bottomSheetDialog.show());
 
 
 
@@ -182,7 +219,7 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
 
         getAllPost();
 
-//        createBottomSheetDialog();
+        createBottomSheetDialog();
         return view;
     }
     private void createBottomSheetDialog() {
@@ -211,29 +248,37 @@ public class SearchFragment extends Fragment implements View.OnClickListener {
         postsCall.enqueue(new Callback<List<ModelPost>>() {
             @Override
             public void onResponse(Call<List<ModelPost>> call, retrofit2.Response<List<ModelPost>> response) {
+                shimmerFrameLayout.stopShimmer();
+                shimmerFrameLayout.setVisibility(View.GONE);
+
                 if (response.isSuccessful()) {
                     List<ModelPost> posts = response.body();
                     if (posts != null && !posts.isEmpty()) {
+                        // Clear existing data if needed or manage pagination
+                        postList.clear();
                         postList.addAll(posts);
-                        adapterPost = new AdapterPost(getActivity(), postList);
-                        posts_rv.setAdapter(adapterPost);
-                        adapterPost.notifyDataSetChanged();
+                            adapterPost = new AdapterPost(getActivity(), postList);
+                            posts_rv.setAdapter(adapterPost);
+                            adapterPost.notifyDataSetChanged();
                     } else {
-
+                        // Handle empty response or no data scenario
+                        // You can show a message or handle as per your app's design
                     }
-                    shimmerFrameLayout.stopShimmer();
-                    shimmerFrameLayout.setVisibility(View.GONE);
                 } else {
+                    // Handle unsuccessful response
+                    // You can show an error message or handle as per your app's design
                 }
             }
 
             @Override
             public void onFailure(Call<List<ModelPost>> call, Throwable t) {
+                shimmerFrameLayout.stopShimmer();
+                shimmerFrameLayout.setVisibility(View.GONE);
                 Toast.makeText(getActivity(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                // Handle failure
             }
         });
     }
+
 
 
 

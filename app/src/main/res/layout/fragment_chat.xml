@@ -63,21 +63,28 @@
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_below="@+id/header"
-        tools:listitem="@layout/chatlist"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        android:visibility="gone"
         android:layout_height="match_parent">
     </androidx.recyclerview.widget.RecyclerView>
 
-    <com.google.android.gms.ads.AdView
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/adView"
-        android:layout_width="wrap_content"
+    <com.facebook.shimmer.ShimmerFrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        ads:adSize="BANNER"
-        android:visibility="gone"
-        ads:adUnitId="@string/banner_ad_unit_id">
-    </com.google.android.gms.ads.AdView>
+        android:layout_below="@+id/header"
+        android:id="@+id/shimmer">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:orientation="vertical">
+            <include layout="@layout/shimmer"/>
+            <include layout="@layout/shimmer"/>
+            <include layout="@layout/shimmer"/>
+            <include layout="@layout/shimmer"/>
+            <include layout="@layout/shimmer"/>
+
+        </LinearLayout>
+
+    </com.facebook.shimmer.ShimmerFrameLayout>
 
 </RelativeLayout>

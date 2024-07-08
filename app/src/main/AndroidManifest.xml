@@ -37,12 +37,25 @@
 
         <activity
             android:name=".Chats.ChatActivity"
-            android:exported="false"
-            android:theme="@style/AuthTheme"
-            />
+            android:exported="true"
+            android:theme="@style/AuthTheme">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data
+                    android:host="192.168.76.225"
+                    android:port="8080" />
+                <data android:pathPattern="/post/" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".Chats.GroupChatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/AuthTheme" />
         <activity
             android:name=".Chats.MainChat"
             android:exported="false"
@@ -168,20 +181,7 @@
             android:name=".user.UserProfile"
             android:configChanges="orientation"
             android:exported="true"
-            android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <!-- Define your domain and pathPrefix for deep linking -->
-                <data
-                    android:host="68.183.245.154"
-                    android:pathPrefix="/user"
-                    android:scheme="http" />
-            </intent-filter>
-        </activity>
+            android:screenOrientation="portrait"></activity>
         <activity
             android:name=".search.Search"
             android:configChanges="orientation"
@@ -260,9 +260,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
-            android:configChanges="orientation"
-            android:screenOrientation="portrait" />
+            android:exported="true"
+            android:name=".MainActivity"></activity>
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

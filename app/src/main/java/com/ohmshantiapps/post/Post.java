@@ -12,6 +12,8 @@ import android.database.Cursor;
 
 import okhttp3.RequestBody;
 import okhttp3.MultipartBody;
+
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -29,12 +31,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.NotificationCompat;
 
+import com.ohmshantiapps.Chats.MainChat;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.api.ApiService;
@@ -81,6 +86,7 @@ public class Post extends AppCompatActivity {
     private static final int PERMISSION_CODE = 1001;
 
     private UserApiClient userApiClient;
+    private ActivityResultLauncher<Intent> pickImageLauncher;
 
 
     SharedPref sharedPref;
@@ -131,25 +137,25 @@ public class Post extends AppCompatActivity {
             type.setText("Text");
         });
 
+        pickImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null) {
+                            Uri imageUri = data.getData();
+
+                        }
+                    }
+                }
+        );
+
 
 
 
 
         add_vines.setOnClickListener(v -> {
-//            Check Permission
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-                if (checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO)
-                        == PackageManager.PERMISSION_DENIED){
-                    String[] permissions = {Manifest.permission.READ_MEDIA_VIDEO};
-                    requestPermissions(permissions, PERMISSION_CODE);
-                }
-                else {
-                    chooseVideo();
-                }
-            }
-            else {
-                chooseVideo();
-            }
+           chooseVideo();
 
         });
         apiService = RetrofitClient.getClient().create(ApiService.class);
@@ -194,6 +200,8 @@ public class Post extends AppCompatActivity {
                             Picasso.get().load(dp).placeholder(R.drawable.avatar).into(circleImageView3);
 
                             post.setOnClickListener(v -> {
+
+
 
                                 mText = text.getText().toString().trim();
 
@@ -247,7 +255,11 @@ public class Post extends AppCompatActivity {
                                             .show();
                                 }else {
 //                                    uploadVine(mText, String.valueOf(video_uri));
-                                    uploadVideo(String.valueOf(video_uri),dp,name,mText);
+                                    try {
+                                        uploadVideo(String.valueOf(video_uri),dp,name,mText);
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                 }
 
                             });
@@ -280,20 +292,8 @@ public class Post extends AppCompatActivity {
         add_meme.setOnClickListener(v -> {
 
             type.setText("Meme");
-            //Check Permission
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-                if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)
-                        == PackageManager.PERMISSION_DENIED){
-                    String[] permissions = {Manifest.permission.READ_MEDIA_IMAGES};
-                    requestPermissions(permissions, PERMISSION_CODE);
-                }
-                else {
-                    pickImageFromGallery();
-                }
-            }
-            else {
-                pickImageFromGallery();
-            }
+            pickImageFromGallery();
+
         });
 
 
@@ -408,7 +408,7 @@ public class Post extends AppCompatActivity {
 
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
-                    .url("http://68.183.245.154//img.php") // Replace "YOUR_BASE_URL" with your actual base URL
+                    .url("http://68.183.245.154//img.php")
                     .post(requestBody)
                     .build();
 
@@ -495,7 +495,7 @@ public class Post extends AppCompatActivity {
 
 
 
-    private void uploadVideo(String videoUri, String dp, String name, String mText) {
+    private void uploadVideo(String videoUri, String dp, String name, String mText) throws IOException {
         if (videoUri.equals("noVideo")) {
             Log.e("Upload Video", "No video selected.");
             return;
@@ -504,34 +504,28 @@ public class Post extends AppCompatActivity {
         File videoFile = new File(getRealPathFromVideoURI(Uri.parse(videoUri)));
         long fileSize = videoFile.length();
 
-        OkHttpClient client = new OkHttpClient();
+        // Get video duration
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(this, Uri.parse(videoUri));
+        String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+        long timeInMillisec = Long.parseLong(time);
+        retriever.release();
 
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        String channelId = "upload_channel";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(channelId, "Video Upload", NotificationManager.IMPORTANCE_LOW);
-            notificationManager.createNotificationChannel(channel);
+        // Determine type based on video length
+        String type;
+        if (timeInMillisec > 60000) {
+            type = "Video";
+        } else {
+            type = "Reel";
         }
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-                .setContentTitle("Video Upload")
-                .setContentText("Upload in progress")
-                .setSmallIcon(R.drawable.ic_share)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setOngoing(true);
-
-        notificationManager.notify(1, builder.build());
+        OkHttpClient client = new OkHttpClient();
 
         RequestBody videoRequestBody = RequestBody.create(MediaType.parse("video/*"), videoFile);
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("video", videoFile.getName(), new CountingRequestBody(videoRequestBody, (bytesWritten, contentLength) -> {
-                    int progress = (int) (bytesWritten * 100 / contentLength);
-                    builder.setProgress(100, progress, false);
-                    builder.setContentText(progress + "% uploaded");
-                    notificationManager.notify(1, builder.build());
-                }))
+                .addFormDataPart("video", videoFile.getName(), videoRequestBody)
                 .build();
 
         Request request = new Request.Builder()
@@ -543,13 +537,8 @@ public class Post extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
                 runOnUiThread(() -> {
-                    builder.setContentText("Upload failed")
-                            .setProgress(0, 0, false)
-                            .setOngoing(false);
-                    notificationManager.notify(1, builder.build());
                     Toast.makeText(Post.this, "Failed to upload video.", Toast.LENGTH_SHORT).show();
                 });
-
             }
 
             @Override
@@ -563,7 +552,7 @@ public class Post extends AppCompatActivity {
                             String videoUrl = jsonResponse.getString("videoUrl");
 
                             String timeStamp = String.valueOf(System.currentTimeMillis());
-                            ModelPost modelPost = new ModelPost(dp, id, "noImage", name, "1", timeStamp, timeStamp, mText, videoUrl, "Video", "1", "1");
+                            ModelPost modelPost = new ModelPost(dp, id, "noImage", name, "1", timeStamp, timeStamp, mText, videoUrl, type, "1", "1");
                             userApiClient.insertModelPost(modelPost);
                             runOnUiThread(() -> {
                                 text.setText("");
@@ -572,7 +561,6 @@ public class Post extends AppCompatActivity {
                                 vines.setVisibility(View.GONE);
                                 post_vine.setVisibility(View.GONE);
                                 post.setVisibility(View.VISIBLE);
-                                type.setText("Text");
                                 pd.setVisibility(View.GONE);
                                 remove_lt.setVisibility(View.GONE);
                                 Alerter.create(Post.this)
@@ -597,10 +585,6 @@ public class Post extends AppCompatActivity {
                     }
                 } else {
                     runOnUiThread(() -> {
-                        builder.setContentText("Upload failed")
-                                .setProgress(0, 0, false)
-                                .setOngoing(false);
-                        notificationManager.notify(1, builder.build());
                         Toast.makeText(Post.this, "Failed to upload video.", Toast.LENGTH_SHORT).show();
                     });
                 }
@@ -613,11 +597,12 @@ public class Post extends AppCompatActivity {
 
 
 
+
     private void chooseVideo() {
         Intent intent = new Intent();
         intent.setType("video/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(intent, PICK_VIDEO_REQUEST);
+        startActivityForResult(Intent.createChooser(intent, "Select Video"), PICK_VIDEO_REQUEST);
     }
 
     private void pickImageFromGallery() {

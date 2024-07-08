@@ -4,8 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:background="?attr/backgroundcolor"
     android:layout_height="match_parent"
+    android:background="?attr/backgroundcolor"
     tools:context=".search.Search"
     tools:ignore="Overdraw">
 
@@ -69,94 +69,68 @@
                 android:src="@drawable/ic_search"
                 app:tint="#fff" />
         </RelativeLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
+        android:id="@+id/tabs"
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:orientation="horizontal"
-        android:id="@+id/tabs"
+        android:background="?attr/layoutcolor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:background="?attr/layoutcolor"
         app:layout_constraintTop_toBottomOf="@+id/header"
         android:baselineAligned="false">
 
         <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_weight="1"
             android:id="@+id/userly"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Users"
             android:textAllCaps="false"
             android:fontFamily="@font/bold"
             android:textColor="?attr/textcolor"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_height="wrap_content"
             tools:ignore="HardcodedText">
 
             <TextView
-                android:layout_centerInParent="true"
-                android:layout_width="wrap_content"
                 android:id="@+id/users"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
                 android:text="Users"
                 android:textSize="16dp"
                 android:textAllCaps="false"
-                tools:ignore="HardcodedText,SpUsage"
                 android:fontFamily="@font/bold"
                 android:textColor="?attr/textcolor"
-                android:layout_height="wrap_content" />
+                tools:ignore="HardcodedText,SpUsage" />
         </RelativeLayout>
+
         <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:textAllCaps="false"
-            android:text="Post"
             android:id="@+id/postly"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Post"
+            android:textAllCaps="false"
             android:fontFamily="@font/bold"
             android:textColor="?attr/textcolor"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_height="wrap_content"
             tools:ignore="HardcodedText">
 
             <TextView
-                android:layout_centerInParent="true"
-                android:layout_width="wrap_content"
                 android:id="@+id/post"
-                android:textAllCaps="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
                 android:text="Posts"
                 android:textSize="16dp"
-                tools:ignore="HardcodedText,SpUsage"
+                android:textAllCaps="false"
                 android:fontFamily="@font/bold"
                 android:textColor="?attr/textcolor"
-                android:layout_height="wrap_content" />
-
-
+                tools:ignore="HardcodedText,SpUsage" />
         </RelativeLayout>
-<!--        <RelativeLayout-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_weight="1"-->
-<!--            android:textAllCaps="false"-->
-<!--            android:fontFamily="@font/bold"-->
-<!--            android:id="@+id/groupsly"-->
-<!--            android:textColor="?attr/textcolor"-->
-<!--            android:text="Groups"-->
-<!--            style="?android:attr/buttonBarButtonStyle"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            tools:ignore="HardcodedText">-->
-
-<!--            <TextView-->
-<!--                android:layout_centerInParent="true"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:textAllCaps="false"-->
-<!--                android:fontFamily="@font/bold"-->
-<!--                android:id="@+id/groups"-->
-<!--                android:textColor="?attr/textcolor"-->
-<!--                android:text="Groups"-->
-<!--                android:textSize="16dp"-->
-<!--                tools:ignore="HardcodedText,SpUsage"-->
-<!--                android:layout_height="wrap_content" />-->
-<!--        </RelativeLayout>-->
     </LinearLayout>
 
     <RelativeLayout
@@ -168,11 +142,11 @@
         app:layout_constraintTop_toBottomOf="@+id/tabs">
 
         <ProgressBar
+            android:id="@+id/pg"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:indeterminateOnly="true"
-            android:id="@+id/pg"
             android:visibility="visible" />
     </RelativeLayout>
 
@@ -184,28 +158,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/rl">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/users_rv"
-/>
+        <com.cooltechworks.views.shimmer.ShimmerRecyclerView
+            android:id="@+id/users_rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:shimmer_demo_angle="20"
+            app:shimmer_demo_child_count="20"
+            app:shimmer_demo_grid_child_count="2"
+            app:shimmer_demo_layout="@layout/demo_layout"
+            tools:listitem="@layout/row_conversation" />
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/posts_rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/posts_rv"
-        android:visibility="gone"
-       />
+        <com.facebook.shimmer.ShimmerFrameLayout
+            android:id="@+id/shimmer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:id="@+id/groups_rv"
-/>
+                <include layout="@layout/shimmer" />
+                <include layout="@layout/shimmer" />
+                <include layout="@layout/shimmer" />
+                <include layout="@layout/shimmer" />
+                <include layout="@layout/shimmer" />
+            </LinearLayout>
+        </com.facebook.shimmer.ShimmerFrameLayout>
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/groups_rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
     </RelativeLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

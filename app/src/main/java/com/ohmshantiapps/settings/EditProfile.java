@@ -307,11 +307,11 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
                         String userName = user.getName();
                         String userEmail = user.getEmail();
                         photoUrl = user.getPhoto();
-                        name.setText(userName);
-                        username.setText(user.getUsername());
+                        name.setText(""+userName);
+                        username.setText(""+user.getUsername());
                         bio.setText(user.getBio());
-                        link.setText(user.getLink());
-                        location.setText(user.getLocation());
+                        link.setText(""+user.getLink());
+                        location.setText(""+user.getLocation());
 
                         try {
                             Glide.with(EditProfile.this)

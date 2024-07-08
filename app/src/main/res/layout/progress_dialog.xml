@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="10dp"
+    android:background="#ffff"
+    android:orientation="horizontal"
+    android:padding="5dp">
+
+    <ProgressBar
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:outlineSpotShadowColor="@color/black"
+        style="?android:attr/progressBarStyleLarge" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_marginTop="20dp"
+        android:textColor="@color/black"
+        android:text="Uploading Image..."
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+</LinearLayout>

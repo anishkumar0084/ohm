@@ -11,11 +11,12 @@
     <item
         android:id="@+id/nav_group"
         android:title=""
-        android:icon="@drawable/ic_group" />
+        android:icon="@drawable/reels" />
     <item
         android:id="@+id/nav_chat"
         android:title=""
-        android:icon="@drawable/ic_chat_btom" />
+        android:icon="@drawable/video"
+        />
     <item
         android:id="@+id/nav_user"
         android:title=""

@@ -10,6 +10,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -80,6 +81,8 @@ public class HomeFragment extends Fragment {
 
       recyclerView = view.findViewById(R.id.postView);
       shimmerFrameLayout = view.findViewById(R.id.shimmer);
+        NestedScrollView contentView = view.findViewById(R.id.cv);
+
       shimmerFrameLayout.startShimmer();
         database = FirebaseDatabase.getInstance();
 
@@ -296,7 +299,6 @@ public class HomeFragment extends Fragment {
 //
 //    }
 
-    // Method to fetch following users
     private void fetchFollowingUsers(int followerId) {
         Call<List<Integer>> followingUsersCall = apiService.getFollowingUsers("getFollowingUsers", followerId);
         followingUsersCall.enqueue(new Callback<List<Integer>>() {

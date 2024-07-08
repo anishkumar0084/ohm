@@ -1,16 +1,20 @@
 package com.ohmshantiapps.Chats;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
 
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -61,7 +65,8 @@ public class MainChat extends AppCompatActivity {
     UsersAdapter usersAdapter;
     TopStatusAdapter statusAdapter;
     ArrayList<UserStatus> userStatuses;
-    ProgressDialog dialog;
+    private ActivityResultLauncher<Intent> pickImageLauncher;
+    AlertDialog progressDialog;
     User user;
 
 
@@ -78,6 +83,19 @@ public class MainChat extends AppCompatActivity {
         AdView mAdView =findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
+
+        pickImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null) {
+                            Uri imageUri = data.getData();
+                            Toast.makeText(MainChat.this, "Image Selected: " + imageUri, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
 
         Adpref adpref;
         adpref = new Adpref(this);
@@ -141,14 +159,11 @@ public class MainChat extends AppCompatActivity {
                                 .child("users")
                                 .child(FirebaseAuth.getInstance().getUid())
                                 .updateChildren(map);
-                        //Toast.makeText(MainActivity.this, token, Toast.LENGTH_SHORT).show();
                     }
                 });
 
 
-        dialog = new ProgressDialog(this);
-        dialog.setMessage("Uploading Image...");
-        dialog.setCancelable(false);
+
 
 
         users = new ArrayList<>();
@@ -244,7 +259,7 @@ public class MainChat extends AppCompatActivity {
 
         if(data != null) {
             if(data.getData() != null) {
-                dialog.show();
+                showProgressDialog();
                 FirebaseStorage storage = FirebaseStorage.getInstance();
                 Date date = new Date();
                 StorageReference reference = storage.getReference().child("status").child(date.getTime() + "");
@@ -280,13 +295,30 @@ public class MainChat extends AppCompatActivity {
                                             .push()
                                             .setValue(status);
 
-                                    dialog.dismiss();
+                                    dismissProgressDialog();
+
                                 }
                             });
                         }
                     }
                 });
             }
+        }
+    }
+    private void showProgressDialog() {
+        if (progressDialog == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            LayoutInflater inflater = getLayoutInflater();
+            builder.setView(inflater.inflate(R.layout.progress_dialog, null));
+            builder.setCancelable(false);
+            progressDialog = builder.create();
+        }
+        progressDialog.show();
+    }
+
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
         }
     }
 
@@ -317,7 +349,7 @@ public class MainChat extends AppCompatActivity {
             Intent intent = new Intent();
             intent.setType("image/*");
             intent.setAction(Intent.ACTION_GET_CONTENT);
-            startActivityForResult(intent, 75);
+            pickImageLauncher.launch(intent);
             return true;
         }
         return super.onOptionsItemSelected(item);
