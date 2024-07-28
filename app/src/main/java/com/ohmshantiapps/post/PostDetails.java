@@ -4,6 +4,7 @@ import static android.content.ContentValues.TAG;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -35,6 +36,7 @@ import android.widget.VideoView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.helper.widget.MotionEffect;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 import androidx.media3.common.MediaItem;
@@ -72,8 +74,11 @@ import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.adapter.AdapterComments;
+import com.ohmshantiapps.adapter.AdapterPost;
 import com.ohmshantiapps.api.ApiResponse;
 import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.CommentCountResponse;
+import com.ohmshantiapps.api.LikeResponse;
 import com.ohmshantiapps.api.ModelPostRequest;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
@@ -114,6 +119,7 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
     CircleImageView circleImageView3;
     TextView name, type, text, likeNo, commentNo, views;
     EditText textBox;
+    private boolean isLiked = false;
     ConstraintLayout constraintLayout9, viewlt;
     private String userId, myName, myDp;
     private DatabaseReference mDatabase;
@@ -141,7 +147,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
     ApiService userApi;
     BigInteger bignumber;
     String Id;
-//    SimpleExoPlayer exoPlayer;
 
 
     @SuppressLint("CutPasteId")
@@ -162,6 +167,7 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
 
         SessionManager sessionManager = new SessionManager(this);
         userId = sessionManager.getUserId();
+        checkLikeStatus(postId,userId);
 
         textBox = findViewById(R.id.textBox);
         name = findViewById(R.id.name);
@@ -213,18 +219,17 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
         back.setOnClickListener(v -> onBackPressed());
 
         loadPostInfo();
-//        loadUserInfo();
-//        setLikes();
 //        setViews();
         loadComments();
-//        createBottomSheetDialog();
-//        createBottomDialog();
-//        BottomDialog();
-//        noLike();
+        createBottomSheetDialog();
+        createBottomDialog();
+        BottomDialog();
+        noComment();
+        noLike();
         video_share.setOnClickListener(v -> bottom.show());
 
         send.setOnClickListener(v -> postComment());
-        like.setOnClickListener(v -> likePost());
+        like.setOnClickListener(v -> likePost(postId, userId));
 
     }
 
@@ -247,6 +252,39 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
 
             }
         });
+
+    }
+    private void noComment(){
+
+        Call<CommentCountResponse> call=userApi.getCommentCount(postId,"true");
+        call.enqueue(new retrofit2.Callback<CommentCountResponse>() {
+            @Override
+            public void onResponse(Call<CommentCountResponse> call, Response<CommentCountResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int commentCount = response.body().getCommentCount();
+
+                    if (commentCount==0) {
+                        commentNo.setText("Comment");
+
+                    } else {
+
+                        commentNo.setText(formatViews(commentCount));
+                    }
+
+
+
+                } else {
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CommentCountResponse> call, Throwable throwable) {
+
+            }
+        });
+
+
+
 
     }
 
@@ -281,30 +319,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
             }
         });
     }
-
-//    private void loadComments() {
-//        LinearLayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
-//        recyclerView.setLayoutManager(layoutManager);
-//        commentsList = new ArrayList<>();
-//        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts").child(postId).child("Comments");
-//        ref.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                commentsList.clear();
-//                for(DataSnapshot ds: dataSnapshot.getChildren()){
-//                    ModelComments modelComments = ds.getValue(ModelComments.class);
-//                    commentsList.add(modelComments);
-//                    adapterComments = new AdapterComments(getApplicationContext(), commentsList);
-//                    recyclerView.setAdapter(adapterComments);
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
 
     private void createBottomSheetDialog() {
         if (bottomSheetDialog == null) {
@@ -346,24 +360,15 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
 
     private void showMoreOptions() {
         PopupMenu popupMenu = new PopupMenu(this, more, Gravity.END);
-        if (Id.equals(userId)) {
-            popupMenu.getMenu().add(Menu.NONE, 0, 0, "Delete");
-            popupMenu.getMenu().add(Menu.NONE, 1, 0, "Edit");
-        }
+//
         popupMenu.getMenu().add(Menu.NONE, 2, 0, "Liked By");
         if (!meme.equals("noImage") || !vine.equals("noVideo")) {
             popupMenu.getMenu().add(Menu.NONE, 3, 0, "Fullscreen");
         }
         popupMenu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
-            if (id == 0) {
-                beginDelete();
-            } else if (id == 1) {
-                Intent intent = new Intent(PostDetails.this, UpdatePost.class);
-                intent.putExtra("key", "editPost");
-                intent.putExtra("editPostId", postId);
-                startActivity(intent);
-            } else if (id == 2) {
+
+             if (id == 2) {
                 Intent intent = new Intent(PostDetails.this, PostLikedBy.class);
                 intent.putExtra("postId", postId);
                 startActivity(intent);
@@ -389,155 +394,129 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
         popupMenu.show();
     }
 
-    private void beginDelete() {
-        if (vine.equals("noVideo") && meme.equals("noImage")) {
-            deleteWithoutBoth();
-        } else if (vine.equals("noVideo")) {
-            deleteWithoutVine();
-        } else if (meme.equals("noImage")) {
-            deleteWithoutMeme();
-        }
-    }
 
-    private void deleteWithoutMeme() {
-        StorageReference vidRef = FirebaseStorage.getInstance().getReferenceFromUrl(hisVine);
-        vidRef.delete().addOnSuccessListener(aVoid -> {
-
-            Query query = FirebaseDatabase.getInstance().getReference("Posts").orderByChild("pId").equalTo(postId);
-            query.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
-                        ds.getRef().removeValue();
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            });
-        }).addOnFailureListener(e -> {
-
-        });
-    }
-
-    private void deleteWithoutVine() {
-
-
-        StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(hisMeme);
-        picRef.delete().addOnSuccessListener(aVoid -> {
-
-            Query query = FirebaseDatabase.getInstance().getReference("Posts").orderByChild("pId").equalTo(postId);
-            query.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
-                        ds.getRef().removeValue();
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                }
-            });
-        }).addOnFailureListener(e -> {
-
-        });
-
-    }
-
-    private void deleteWithoutBoth() {
-        Query query = FirebaseDatabase.getInstance().getReference("Posts").orderByChild("pId").equalTo(postId);
-        query.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot ds : dataSnapshot.getChildren()) {
-                    ds.getRef().removeValue();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-
-    }
 
 
     private void noLike() {
-        DatabaseReference likeRef = FirebaseDatabase.getInstance().getReference().child("Likes");
-        likeRef.child(postId).addValueEventListener(new ValueEventListener() {
+
+        Call<LikeResponse> call = userApi.getLikes(postId, "get_likes");
+
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String numOfLikes = String.valueOf((int) snapshot.getChildrenCount());
-                if (numOfLikes.equals("0")) {
-                    likeNo.setText("Like");
-
-                } else {
-                    likeNo.setText(snapshot.getChildrenCount() + "");
-                }
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
-    }
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LikeResponse likeResponse = response.body();
+                    List<String> userIds = likeResponse.getUserIds();
+                    String likes= String.valueOf(likeResponse.getLikeCount());
 
 
-    private void setLikes() {
-        DatabaseReference likeRef = FirebaseDatabase.getInstance().getReference().child("Likes");
-        likeRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.child(postId).hasChild(userId)) {
+                    if (likes.equals("0")||likes==null) {
+                        likeNo.setText("Like");
 
-                    like_img.setImageResource(R.drawable.ic_liked);
-
-                } else {
-                    like_img.setImageResource(R.drawable.ic_like);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-    }
-
-    private void likePost() {
-
-        mProcessCLike = true;
-        DatabaseReference likeRef = FirebaseDatabase.getInstance().getReference().child("Likes");
-        likeRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (mProcessCLike) {
-                    if (dataSnapshot.child(postId).hasChild(userId)) {
-                        likeRef.child(postId).child(userId).removeValue();
-                        mProcessCLike = false;
-                    } else {
-                        likeRef.child(postId).child(userId).setValue("Liked");
-                        mProcessCLike = false;
-                        addToHisNotification("" + hisId, "" + postId, "Liked your post");
+                    }else {
+                        likeNo.setText(formatViews(Long.parseLong(likes))+"");
                     }
+
+
+                } else {
+                    Log.e(MotionEffect.TAG, "Failed to get likes. Response code: " + response.code());
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
+
+            }
+        });
+    }
+
+    private void checkLikeStatus(String postId, String userId) {
+        Call<LikeResponse> call = userApi.checkLikeStatus(postId, userId, "check");
+
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
+            @Override
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful()) {
+                    LikeResponse likeResponse = response.body();
+                    if (likeResponse != null) {
+                        String status = likeResponse.getStatus();
+                        if ("liked".equals(status)) {
+                            isLiked = true;
+                        } else if ("unliked".equals(status)) {
+                            isLiked = false;
+                        }
+                        updateLikeButtonState();
+                    } else {
+                        Toast.makeText(PostDetails.this, "Null response received", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(PostDetails.this, "Failed to get like status", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
+                Toast.makeText(PostDetails.this, "Network error: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 
 
+
+
+
     }
+    private void likePost(String postId, String userId) {
+        Call<LikeResponse> call = userApi.toggleLike(postId, userId, "toggle");
+
+        call.enqueue(new retrofit2.Callback<LikeResponse>() {
+            @Override
+            public void onResponse(Call<LikeResponse> call, Response<LikeResponse> response) {
+                if (response.isSuccessful()) {
+                    LikeResponse likeResponse = response.body();
+                    if (likeResponse != null) {
+                        String status = likeResponse.getStatus();
+                        if ("liked".equals(status)) {
+                            isLiked = true;
+                            noLike();
+                            Toast.makeText(PostDetails.this, "Post liked successfully", Toast.LENGTH_SHORT).show();
+                        } else if ("unliked".equals(status)) {
+                            isLiked = false;
+                            noLike();
+
+                            Toast.makeText(PostDetails.this, "Post unliked successfully", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(PostDetails.this, "Unexpected response", Toast.LENGTH_SHORT).show();
+                        }
+                        updateLikeButtonState();
+                    } else {
+                        Toast.makeText(PostDetails.this, "Null response received", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(PostDetails.this, "Failed to toggle like status", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LikeResponse> call, Throwable throwable) {
+                Toast.makeText(PostDetails.this, "Network error: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    private void updateLikeButtonState() {
+
+        if (isLiked) {
+
+            like_img.setImageResource(R.drawable.ic_liked);
+//
+//
+        } else {
+            like_img.setImageResource(R.drawable.ic_like);
+//
+        }
+    }
+
+
 
     private void postComment() {
         String comment = textBox.getText().toString().trim();
@@ -575,36 +554,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
         });
     }
 
-
-
-//    private void postComment() {
-//        String comment = textBox.getText().toString().trim();
-//        if (TextUtils.isEmpty(comment)){
-//
-//        }else {
-//            String timeStamp = String.valueOf(System.currentTimeMillis());
-//            DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts").child(postId).child("Comments");
-//
-//            HashMap<String, Object> hashMap = new HashMap<>();
-//            hashMap.put("cId", timeStamp);
-//            hashMap.put("comment", comment);
-//            hashMap.put("timestamp", timeStamp);
-//            hashMap.put("id", userId);
-//            hashMap.put("pLikes", "0");
-//            hashMap.put("type", "text");
-//            hashMap.put("pId", postId);
-//            hashMap.put("dp", myDp);
-//            hashMap.put("mane", myName);
-//
-//            ref.child(timeStamp).setValue(hashMap)
-//                    .addOnSuccessListener(aVoid -> {
-//                        textBox.setText("");
-//                        updateCommentCount();
-//                    }).addOnFailureListener(e -> {
-//
-//                    });
-//        }
-//    }
 
     private void addToHisNotification(String hisUid, String pId, String notification){
         String timestamp = ""+System.currentTimeMillis();
@@ -648,24 +597,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
     }
 
 
-    private void loadUserInfo() {
-        Query query = FirebaseDatabase.getInstance().getReference("Users");
-        query.orderByChild("id").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot ds: dataSnapshot.getChildren()){
-                    myName = ""+ds.child("name").getValue();
-                    myDp = ""+ds.child("photo").getValue();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-    }
-
     private void loadPostInfo(){
 
         ModelPostRequest request = new ModelPostRequest("getPostsByPid", postId);
@@ -688,8 +619,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
                     String hisViews = post.getpViews();
                     hisName = post.getName();
                     hisId = post.getId();
-                    pLikes = post.getpLikes();
-                    String comment = post.getpComments();
 
                     // Update UI with post data
                     views.setText(hisViews);
@@ -705,7 +634,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
                         type.setText(hisTypes +  " - " +lastSeenTime );
 
 
-                        // Handle your time display here
                     }
                     // Load image using Picasso
                     try {
@@ -715,18 +643,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
                     // Handle image and video visibility
                     if (hisMeme.equals("noImage") &&  hisVine.equals("noVideo")) {
                         load.setVisibility(View.GONE);
-                    }
-
-                    // Handle video playback
-                    if (!hisVine.equals("noVideo")) {
-                        // Your video handling logic here
-                    }
-
-                    // Handle comment visibility
-                    if (comment.equals("0")) {
-                        commentNo.setText("Comment");
-                    } else {
-                        // Handle other cases
                     }
 
                     // Handle text visibility
@@ -802,175 +718,6 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
             }
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//    private void loadPostInfo() {
-//        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Posts");
-//        Query query = ref.orderByChild("pId").equalTo(postId);
-//        query.addValueEventListener(new ValueEventListener() {
-//            @SuppressLint("SetTextI18n")
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//
-//                for (DataSnapshot ds : dataSnapshot.getChildren()){
-//                    hisText = ""+ds.child("text").getValue();
-//                    hisMeme = ""+ds.child("meme").getValue();
-//                    hisVine = ""+ds.child("vine").getValue();
-//                    hisDp = ""+ds.child("dp").getValue();
-//                    hisTime = ""+ds.child("pTime").getValue();
-//                    hisTypes = ""+ds.child("type").getValue();
-//                    String hisViews = ""+ds.child("pViews").getValue();
-//                    hisName = ""+ds.child("name").getValue();
-//                    hisId = ""+ds.child("id").getValue();
-//                    pLikes = ""+ds.child("pLikes").getValue();
-//                    String comment = ""+ds.child("pComments").getValue();
-//
-//                    GetTimeAgo getTimeAgo = new GetTimeAgo();
-//                    long lastTime = Long.parseLong(hisTime);
-//                    String lastSeenTime = GetTimeAgo.getTimeAgo(lastTime);
-//
-//                    views.setText(hisViews);
-//                    text.setText(hisText);
-//                    //DP
-//                    try {
-//                        Picasso.get().load(hisDp).placeholder(R.drawable.avatar).into(circleImageView3);
-//                    }catch (Exception ignored){
-//
-//                    }
-//
-//                    if (hisMeme.equals("noImage") &&  hisVine.equals("noVideo")){
-//                        load.setVisibility(View.GONE);
-//                    }
-//
-//                    //hisTime
-//                    type.setText(hisTypes +  " - " +lastSeenTime );
-//                    name.setText(hisName);
-//                    if (comment.equals("0")){
-//                        commentNo.setText("Comment");
-//
-//                    }else {
-//                        commentNo.setText(comment);
-//                    }
-//
-//                    String ed_text = text.getText().toString().trim();
-//                    if(ed_text.length() > 0)
-//                    {
-//                        constraintLayout9.setVisibility(View.VISIBLE);
-//
-//                    }
-//                    else
-//                    {
-//                        constraintLayout9.setVisibility(View.GONE);
-//                    }
-//
-//                    name.setOnClickListener(v -> {
-//                        Intent intent = new Intent(PostDetails.this, UserProfile.class);
-//                        intent.putExtra("hisUid", hisId);
-//                        startActivity(intent);
-//                    });
-//                    circleImageView3.setOnClickListener(v -> {
-//                        Intent intent = new Intent(PostDetails.this, UserProfile.class);
-//                        intent.putExtra("hisUid", hisId);
-//                        startActivity(intent);
-//                    });
-//
-//                    //Post Image
-//                    if (hisMeme.equals("noImage")){
-//                        meme.setVisibility(View.GONE);
-//                    }else {
-//                        try {
-//                            Picasso.get().load(hisMeme).into(meme);
-//                        }catch (Exception ignored){
-//
-//                        }
-//                    }
-//
-//
-//                    //Post Vine
-//                    if (hisVine.equals("noVideo")){
-//                        vine.setVisibility(View.GONE);
-//                        view_ly.setVisibility(View.GONE);
-//                  video_share.setVisibility(View.GONE);
-//
-//                    }else {
-//
-//                        DataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory()
-//                                .setUserAgent(userAgent)
-//                                .setKeepPostFor302Redirects(true)
-//                                .setAllowCrossProtocolRedirects(true)
-//                                .setConnectTimeoutMs(DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS)
-//                                .setReadTimeoutMs(DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS)
-//                                .setDefaultRequestProperties(defaultRequestProperties);
-//                        DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(PostDetails.this, httpDataSourceFactory);
-//                        MediaItem mediaItem = new MediaItem.Builder()
-//                                .setUri(hisVine)
-//                                .setMimeType(MimeTypes.APPLICATION_MP4)
-//                                .build();
-//
-//                        MediaSource progressiveMediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem);
-//                        ExoTrackSelection.Factory videoSelector = new AdaptiveTrackSelection.Factory();
-//                        trackSelector = new DefaultTrackSelector(PostDetails.this, videoSelector);
-//                        exoPlayer = new ExoPlayer.Builder(PostDetails.this)
-//                                .setTrackSelector(trackSelector)
-//                                .setSeekForwardIncrementMs(10000)
-//                                .setSeekBackIncrementMs(10000)
-//                                .build();
-//                        vine.setPlayer(exoPlayer);
-//                        vine.setKeepScreenOn(true);  // keep screen on == consume user battery;
-//                        exoPlayer.setMediaSource(progressiveMediaSource);
-//                        exoPlayer.prepare();
-//                        exoPlayer.setPlayWhenReady(true);
-//
-//
-//
-//                    }
-//
-//
-//
-//
-////                        Uri vineUri = Uri.parse(hisVine);
-////                     vine.setVideoURI(vineUri);
-////
-////                     vine.start();
-////
-////                        MediaController mediaController = new MediaController(PostDetails.this);
-////                        mediaController.setAnchorView(vine);
-////                        vine.setMediaController(mediaController);
-////
-////                        vine.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-////                            @Override
-////                            public void onPrepared(MediaPlayer mp) {
-////                                mp.setLooping(true);
-////                            }
-////                        });
-//
-//
-//
-//
-//                }
-//
-//
-//
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
 
     private void shareImageAndText(String text, Bitmap bitmap) {
         Uri uri = saveImageToShare(bitmap);
@@ -1193,6 +940,40 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
 
         });
     }
+    public String formatViews(long views) {
+        if (views < 1000) {
+            return String.valueOf(views); // No formatting needed
+        } else if (views < 1_00_000) {
+            // Convert to "1k", "10k", "999k" etc.
+            if (views % 1000 == 0) {
+                return String.format("%.0fk", views / 1000.0);
+            } else {
+                return String.format("%.1fk", views / 1000.0);
+            }
+        } else if (views < 1_00_00_000) {
+            // Convert to "1 lakh", "10 lakh", "99 lakh" etc.
+            if (views % 1_00_000 == 0) {
+                return String.format("%.0f lakh", views / 1_00_000.0);
+            } else {
+                return String.format("%.1f lakh", views / 1_00_000.0);
+            }
+        } else if (views < 1_000_00_00_000L) {
+            // Convert to "1 crore", "10 crore", "999 crore" etc.
+            if (views % 1_00_00_000 == 0) {
+                return String.format("%.0f crore", views / 1_00_00_000.0);
+            } else {
+                return String.format("%.1f crore", views / 1_00_00_000.0);
+            }
+        } else {
+            // Convert to "1 billion", "10 billion", "999 billion" etc.
+            if (views % 1_000_00_00_000L == 0) {
+                return String.format("%.0f billion", views / 1_000_00_00_000.0);
+            } else {
+                return String.format("%.1f billion", views / 1_000_00_00_000.0);
+            }
+        }
+    }
+
 
     private void pickImageFromGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK);
@@ -1214,28 +995,19 @@ public class PostDetails extends AppCompatActivity implements View.OnClickListen
     @Override
     protected void onPause() {
         super.onPause();
-        if(!hisVine.equals("noVideo")){
-            exoPlayer.pause();
 
-
-        }
     }
 
     @Override
     protected void onUserLeaveHint() {
         super.onUserLeaveHint();
 
-        if(!hisVine.equals("noVideo")){
-            exoPlayer.pause();
 
-
-        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-//        exoPlayer.setPlayWhenReady(true);
     }
 
 

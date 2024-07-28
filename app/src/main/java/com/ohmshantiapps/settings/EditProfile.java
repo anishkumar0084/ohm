@@ -213,8 +213,8 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
 
                                 }
 
-                                Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,null,null,imageUrl,null,null,null,true,null,null);
-                                ModelPost modelPost = new ModelPost(imageUrl,userId,null,null,null,null,null,null,null,null,null,null);
+                                Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,null,null,imageUrl,null,null,null,null,null,null,null);
+                                ModelPost modelPost = new ModelPost(imageUrl,userId,null,null,null,null,null,null,null,null,null,null,null);
                                 Call<Void> call2 = userApi.updateModelPost(Integer.parseInt(userId),modelPost);
                                 call2.enqueue(new Callback<Void>() {
                                     @Override
@@ -505,8 +505,8 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
 
             deleteImage(photoUrl);
 
-            Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,null,null,"no",null,null,null,true,null,null);
-            ModelPost modelPost = new ModelPost("no",userId,null,null,null,null,null,null,null,null,null,null);
+            Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,null,null,"no",null,null,null,null,null,null,null);
+            ModelPost modelPost = new ModelPost("no",userId,null,null,null,null,null,null,null,null,null,null,null);
             Call<Void> call2 = userApi.updateModelPost(Integer.parseInt(userId),modelPost);
             call2.enqueue(new Callback<Void>() {
                 @Override
@@ -573,6 +573,12 @@ public class EditProfile extends AppCompatActivity implements View.OnClickListen
 
 
         }
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Fetch the user profile whenever this activity is resumed
+        fetchuserprofile();
     }
 
 }

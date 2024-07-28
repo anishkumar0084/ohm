@@ -131,6 +131,7 @@ public class SignIn extends AppCompatActivity {
                         finish();
                     } else {
                         showErrorAlert("Users ID not found in response");
+                        enableUI();
                     }
                 } else {
                     handleServerError(response);
@@ -146,7 +147,7 @@ public class SignIn extends AppCompatActivity {
                 enableUI();
 
                 if (t instanceof IOException) {
-                    showErrorAlert("Network error. Please check your internet connection.");
+                    showErrorAlert("Network error. Please check your internet connection."+t.getMessage());
                 } else {
                     showErrorAlert("Login failed: " + t.getMessage());
                 }
@@ -180,18 +181,7 @@ public class SignIn extends AppCompatActivity {
         return networkInfo != null && networkInfo.isConnected();
     }
 
-    private void showAlert(String message) {
-        Alerter.create(SignIn.this)
-                .setTitle("Response")
-                .setIcon(R.drawable.ic_error)
-                .setBackgroundColorRes(R.color.colorPrimary)
-                .setDuration(10000)
-                .setTitleTypeface(Objects.requireNonNull(ResourcesCompat.getFont(SignIn.this, R.font.bold)))
-                .setTextTypeface(Objects.requireNonNull(ResourcesCompat.getFont(SignIn.this, R.font.med)))
-                .enableSwipeToDismiss()
-                .setText(message)
-                .show();
-    }
+
 
     private void showErrorAlert(String message) {
         Alerter.create(SignIn.this)
@@ -219,4 +209,5 @@ public class SignIn extends AppCompatActivity {
         register.setEnabled(true);
         forgot.setEnabled(true);
     }
+
 }

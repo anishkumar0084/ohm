@@ -40,4 +40,14 @@
     <string name="dislike_button_description">Dislike</string>
     <string name="comment_button_description">Comment</string>
     <string name="share_button_description">Share</string>
+    <string name="select_problem_type_prompt">Select problem type</string>
+
+    <string-array name="problem_types">
+        <item>Select problem type</item>
+        <item>Bug Report</item>
+        <item>Account Issue</item>
+        <item>Payment Issue</item>
+        <item>Feature Request</item>
+        <item>Other</item>
+    </string-array>
 </resources>

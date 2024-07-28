@@ -2,18 +2,18 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/search"
-        android:icon="@drawable/ic_search"
-        android:title="Search"
-        app:showAsAction="always" />
-    <item
-        android:id="@+id/group"
-        android:title="Groups" />
+<!--    <item-->
+<!--        android:id="@+id/search"-->
+<!--        android:icon="@drawable/ic_search"-->
+<!--        android:title="Search"-->
+<!--        app:showAsAction="always" />-->
+<!--    <item-->
+<!--        android:id="@+id/group"-->
+<!--        android:title="Groups" />-->
     <item
         android:id="@+id/invite"
-        android:title="Invite" />
+        android:title="Rules" />
     <item
         android:id="@+id/settings"
-        android:title="Settings" />
+        android:title="Add Story" />
 </menu>

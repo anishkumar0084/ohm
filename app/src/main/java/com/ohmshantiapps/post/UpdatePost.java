@@ -235,7 +235,7 @@ public class UpdatePost extends AppCompatActivity {
     private void updateData(String mText) {
 
         userApi = RetrofitClient.getClient().create(ApiService.class);
-        ModelPost modelPost = new ModelPost(null,null,null,null,null,editPostId,null,mText,null,null,null,null);
+        ModelPost modelPost = new ModelPost(null,null,null,null,null,editPostId,null,mText,null,null,null,null,null);
         Call<Void> call2 = userApi.updatePostByPid(Long.parseLong(editPostId),modelPost);
         call2.enqueue(new Callback<Void>() {
             @Override

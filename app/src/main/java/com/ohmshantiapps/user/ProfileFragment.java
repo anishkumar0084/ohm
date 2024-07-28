@@ -37,6 +37,7 @@ import com.tapadoo.alerter.Alerter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import retrofit2.Call;
@@ -204,18 +205,19 @@ public class ProfileFragment extends Fragment {
                         bio.setText(dbBio);
                         link.setText(dbLink);
                         location.setText(dbLocation);
-                        if (photoUrl.isEmpty()) {
+                        if (photoUrl == null) {
                           circularImageView.setImageResource(R.drawable.avatar);
                         }else {
 
                             try {
-                                Glide.with(getActivity())
+                                Glide.with(requireActivity())
                                         .load(photoUrl)
                                         .apply(new RequestOptions()
+                                                .error(R.drawable.avatar)
                                         )  // Set the error placeholder
                                         .into(circularImageView);
                             } catch (Exception e) {
-                                Glide.with(getActivity())
+                                Glide.with(requireActivity())
                                         .load(R.drawable.avatar)
                                         .into(circularImageView);
                             }

@@ -29,6 +29,7 @@ import com.ohmshantiapps.adapter.AdapterPost;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.ModelPostRequest;
 import com.ohmshantiapps.api.RetrofitClient;
+import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.post.UpdatePost;
 import com.tapadoo.alerter.Alerter;
@@ -45,13 +46,11 @@ public class Saved extends AppCompatActivity {
 
     RecyclerView recyclerView;
      String userId;
-     FirebaseAuth mAuth;
     TextView textView11;
     ProgressBar pg;
     ImageView imageView3;
     AdapterPost adapterPost;
     List<ModelPost> postList;
-    ArrayList<String> mySaves;
     SharedPref sharedPref;
     ApiService userApi;
 
@@ -63,13 +62,13 @@ public class Saved extends AppCompatActivity {
         }else setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_saved);
-        mAuth = FirebaseAuth.getInstance();
-        userId = Objects.requireNonNull(mAuth.getCurrentUser()).getUid();
         recyclerView = findViewById(R.id.users);
         imageView3 = findViewById(R.id.imageView3);
         textView11 = findViewById(R.id.textView11);
         pg = findViewById(R.id.pg);
         pg.setVisibility(View.VISIBLE);
+        SessionManager sessionManager = new SessionManager(this);
+        userId = sessionManager.getUserId();
         imageView3.setOnClickListener(v -> onBackPressed());
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -82,35 +81,27 @@ public class Saved extends AppCompatActivity {
     }
 
     private void mySaved() {
-        mySaves = new ArrayList<>();
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Saves")
-                .child(userId);
-        reference.addValueEventListener(new ValueEventListener() {
+        Call<List<String>> call =userApi.getSavedPosts("get_saved_posts", userId);
+        call.enqueue(new Callback<List<String>>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                for (DataSnapshot snapshot1 : snapshot.getChildren()){
-                    Boolean isSaved = snapshot1.getValue(Boolean.class);
-                    if (isSaved != null && isSaved) {
-                        mySaves.add(snapshot1.getKey());
-                    } else {
+            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<String> savedPosts = response.body();
+                    loadPostData((ArrayList<String>) savedPosts);
 
-                        handleDeletedPost(snapshot1.getKey());
-                    }
+                } else {
+                    Toast.makeText(Saved.this, "Failed to get saved posts", Toast.LENGTH_SHORT).show();
                 }
-
-                loadPostData(mySaves);
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                // Handle the error if necessary
+            public void onFailure(Call<List<String>> call, Throwable t) {
+                Toast.makeText(Saved.this, "Network error: "+t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void handleDeletedPost(String postId) {
 
-    }
 
 
     private void loadPostData(ArrayList<String> postIds) {
@@ -123,15 +114,19 @@ public class Saved extends AppCompatActivity {
             call.enqueue(new Callback<ModelPost[]>() {
                 @Override
                 public void onResponse(Call<ModelPost[]> call, Response<ModelPost[]> response) {
-                    if (response.isSuccessful() && response.body() != null && response.body().length > 0) {
-                        ModelPost post = response.body()[0];
-                        postList.add(post);
-                        adapterPost.notifyDataSetChanged();
-                         pg.setVisibility(View.GONE);
-
-
+                    if (response.isSuccessful()) {
+                        ModelPost[] posts = response.body();
+                        if (posts != null && posts.length > 0) {
+                            for (ModelPost post : posts) {
+                                postList.add(post);
+                            }
+                            adapterPost.notifyDataSetChanged();
+                            pg.setVisibility(View.GONE);
+                        } else {
+                            Toast.makeText(Saved.this, "No posts found", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
-                        Toast.makeText(Saved.this, "Failed to get post details", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Saved.this, "Failed to get posts: " + response.message(), Toast.LENGTH_SHORT).show();
                     }
                 }
 
@@ -145,11 +140,12 @@ public class Saved extends AppCompatActivity {
                             .enableSwipeToDismiss()
                             .setTitleTypeface(Typeface.createFromAsset(getAssets(), "bold.ttf"))
                             .setTextTypeface(Typeface.createFromAsset(getAssets(), "med.ttf"))
-                            .setText(t.getMessage())
+                            .setText("Network error: " + t.getMessage())
                             .show();
                     Toast.makeText(Saved.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
+
         }
     }
 

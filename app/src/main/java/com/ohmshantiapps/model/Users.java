@@ -37,10 +37,13 @@ public class Users {
     private String typingTo;
 
     @SerializedName("isBlocked")
-    private boolean isBlocked;
+    private String isBlocked;
 
     @SerializedName("password")
     private String password;
+
+    @SerializedName("coin")
+    private String coin;
 
 
 
@@ -48,12 +51,13 @@ public class Users {
     private String userid;
 
     // Constructor
-    public Users(int id, String name, String email, String username, String bio, String location, String link, String photo, String phone, String status, String typingTo, boolean isBlocked, String password, String userid) {
+    public Users(int id, String name, String email, String username, String bio, String location, String link, String photo, String phone, String status, String typingTo, String  isBlocked, String password, String userid,String coin) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.username = username;
         this.bio = bio;
+        this.coin=coin;
         this.location = location;
         this.link = link;
         this.photo = photo;
@@ -63,6 +67,14 @@ public class Users {
         this.isBlocked = isBlocked;
         this.password = password;
         this.userid=userid;
+    }
+
+    public String getCoin() {
+        return coin;
+    }
+
+    public void setCoin(String coin) {
+        this.coin = coin;
     }
 
     public String getUserid() {
@@ -165,11 +177,11 @@ public class Users {
         this.typingTo = typingTo;
     }
 
-    public boolean isBlocked() {
+    public String isBlocked() {
         return isBlocked;
     }
 
-    public void setBlocked(boolean blocked) {
+    public void setBlocked(String blocked) {
         isBlocked = blocked;
     }
 
@@ -198,6 +210,7 @@ public class Users {
                 ", typingTo='" + typingTo + '\'' +
                 ", isBlocked=" + isBlocked +
                 ", password='" + password + '\'' +
+                ", coin='" + coin + '\'' +
                 ",userid='" + userid + '\''+
                 '}';
     }

@@ -178,11 +178,12 @@ public class MessagesAdapter extends RecyclerView.Adapter {
                             .setView(binding.getRoot())
                             .create();
 
-                    if(remoteConfig.getBoolean("isEveryoneDeletionEnabled")) {
-                        binding.everyone.setVisibility(View.VISIBLE);
-                    } else {
-                        binding.everyone.setVisibility(View.GONE);
-                    }
+//                    if(remoteConfig.getBoolean("isEveryoneDeletionEnabled")) {
+//                        binding.everyone.setVisibility(View.VISIBLE);
+//                    } else {
+//                        binding.everyone.setVisibility(View.GONE);
+//                    }
+                    binding.everyone.setVisibility(View.VISIBLE);
                     binding.everyone.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {

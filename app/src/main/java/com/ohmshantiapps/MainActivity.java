@@ -16,13 +16,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
+import com.ohmshantiapps.Chats.CleanupWorker;
 import com.ohmshantiapps.groups.GroupFragment;
+import com.ohmshantiapps.menu.wallet.UpdateCoinsWorker;
 import com.ohmshantiapps.notifications.Token;
 import com.ohmshantiapps.search.SearchFragment;
 import com.ohmshantiapps.shareChat.ChatFragment;
@@ -30,6 +34,7 @@ import com.ohmshantiapps.user.HomeFragment;
 import com.ohmshantiapps.user.ProfileFragment;
 
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
     private static final int STORAGE_PERMISSION_CODE = 100;
@@ -61,6 +66,12 @@ public class MainActivity extends AppCompatActivity {
         if (Intent.ACTION_VIEW.equals(action) && data != null) {
             handleDeepLink(data);
         }
+
+        PeriodicWorkRequest updateCoinsWorkRequest =
+                new PeriodicWorkRequest.Builder(UpdateCoinsWorker.class, 1, TimeUnit.DAYS)
+                        .build();
+
+        WorkManager.getInstance(this).enqueue(updateCoinsWorkRequest);
 
 
     }

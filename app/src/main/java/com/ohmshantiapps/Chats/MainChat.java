@@ -32,8 +32,10 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -46,16 +48,30 @@ import com.ohmshantiapps.Adpref;
 import com.ohmshantiapps.Chats.Adapters.TopStatusAdapter;
 import com.ohmshantiapps.Chats.Adapters.UsersAdapter;
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.adapter.AdapterUsers;
+import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.FollowersFollowingResponse;
+import com.ohmshantiapps.api.RetrofitClient;
+import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.databinding.ActivityMainChatBinding;
 import com.ohmshantiapps.model.Status;
 import com.ohmshantiapps.model.User;
 import com.ohmshantiapps.model.UserStatus;
+import com.ohmshantiapps.model.Users;
+import com.ohmshantiapps.user.MyFollowing;
+import com.tapadoo.alerter.Alerter;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainChat extends AppCompatActivity {
 
@@ -68,6 +84,8 @@ public class MainChat extends AppCompatActivity {
     private ActivityResultLauncher<Intent> pickImageLauncher;
     AlertDialog progressDialog;
     User user;
+    ApiService userApi;
+    String userId;
 
 
     @Override
@@ -77,6 +95,13 @@ public class MainChat extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.toolbar.toolbar);
+        userApi = RetrofitClient.getClient().create(ApiService.class);
+
+        SessionManager sessionManager = new SessionManager(this);
+
+        userId = String.valueOf(Integer.parseInt(sessionManager.getUserId()));
+
+        showUsers();
 
         MobileAds.initialize(this, initializationStatus -> {
         });
@@ -215,43 +240,68 @@ public class MainChat extends AppCompatActivity {
             }
         });
 
-        database.getReference().child("stories").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if(snapshot.exists()) {
-                    userStatuses.clear();
-                    for(DataSnapshot storySnapshot : snapshot.getChildren()) {
-                        UserStatus status = new UserStatus();
-                        status.setName(storySnapshot.child("name").getValue(String.class));
-                        status.setProfileImage(storySnapshot.child("profileImage").getValue(String.class));
-                        status.setLastUpdated(storySnapshot.child("lastUpdated").getValue(Long.class));
 
-                        ArrayList<Status> statuses = new ArrayList<>();
-
-                        for(DataSnapshot statusSnapshot : storySnapshot.child("statuses").getChildren()) {
-                            Status sampleStatus = statusSnapshot.getValue(Status.class);
-                            statuses.add(sampleStatus);
-                        }
-
-                        status.setStatuses(statuses);
-                        userStatuses.add(status);
-                    }
-                    binding.statusList.hideShimmerAdapter();
-                    statusAdapter.notifyDataSetChanged();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
 
 
 
 
 
     }
+    private void fetchUserStories(List<String> userIds) {
+        // Get the current user ID
+        String currentUserId = getCurrentUserId();
+
+        if (currentUserId == null) {
+            showToast("Current user not found");
+            return;
+        }
+
+        // Include the current user's ID in the userIds list if not already included
+        if (!userIds.contains(currentUserId)) {
+            userIds.add(currentUserId);
+        }
+        database.getReference().child("stories").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                binding.statusList.hideShimmerAdapter(); // Dismiss shimmer adapter first
+
+                if (snapshot.exists() && snapshot.hasChildren()) {
+                    userStatuses.clear();
+                    for (String userId : userIds) {
+                        if (snapshot.hasChild(userId)) {
+                            DataSnapshot storySnapshot = snapshot.child(userId);
+                            UserStatus status = new UserStatus();
+                            status.setName(storySnapshot.child("name").getValue(String.class));
+                            status.setProfileImage(storySnapshot.child("profileImage").getValue(String.class));
+                            status.setLastUpdated(storySnapshot.child("lastUpdated").getValue(Long.class));
+
+                            ArrayList<Status> statuses = new ArrayList<>();
+
+                            for (DataSnapshot statusSnapshot : storySnapshot.child("statuses").getChildren()) {
+                                Status sampleStatus = statusSnapshot.getValue(Status.class);
+                                statuses.add(sampleStatus);
+                            }
+
+                            status.setStatuses(statuses);
+                            userStatuses.add(status);
+                        }
+                    }
+                    statusAdapter.notifyDataSetChanged();
+                } else {
+                    userStatuses.clear();
+                    statusAdapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                binding.statusList.hideShimmerAdapter();
+            }
+        });
+
+
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -294,6 +344,8 @@ public class MainChat extends AppCompatActivity {
                                             .child("statuses")
                                             .push()
                                             .setValue(status);
+
+//                                    fetchUserStories(Collections.singletonList(FirebaseAuth.getInstance().getUid()));
 
                                     dismissProgressDialog();
 
@@ -339,13 +391,14 @@ public class MainChat extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.group) {
-            startActivity(new Intent(MainChat.this, GroupChatActivity.class));
-            return true;
-        } else if (id == R.id.search) {
+        if (id == R.id.invite) {
             Toast.makeText(MainChat.this, "Search clicked.", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (id == R.id.settings) {
+                        return true;
+//        } else if (id == R.id.search) {
+//            Toast.makeText(MainChat.this, "Search clicked.", Toast.LENGTH_SHORT).show();
+//            return true;
+        } else
+            if (id == R.id.settings) {
             Intent intent = new Intent();
             intent.setType("image/*");
             intent.setAction(Intent.ACTION_GET_CONTENT);
@@ -360,6 +413,98 @@ public class MainChat extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.topmenu, menu);
         return super.onCreateOptionsMenu(menu);
     }
+    private void showUsers(){
+        Call<FollowersFollowingResponse> call = userApi.getFollowersFollowing(Integer.parseInt(userId));
+
+        call.enqueue(new Callback<FollowersFollowingResponse>() {
+            @Override
+            public void onResponse(Call<FollowersFollowingResponse> call, Response<FollowersFollowingResponse> response) {
+                if (response.isSuccessful()) {
+                    FollowersFollowingResponse data = response.body();
+                    if (data != null) {
+
+                        List<Integer> followersList = data.getFollowers();
+                        List<Integer> followingList = data.getFollowing();
+
+                        getAllUsers(followersList);
+
+                    }
+                } else {
+                    showToast("Failed to fetch data");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FollowersFollowingResponse> call, Throwable throwable) {
+                showToast("Network error: " + throwable.getMessage());
+            }
+        });
+
+
+    }
+    private void showToast(String message) {
+        Alerter.create(this)
+                .setTitle("Error")
+                .setIcon(R.drawable.ic_error)
+                .setBackgroundColorRes(R.color.colorPrimary)
+                .setDuration(10000)
+                .enableSwipeToDismiss()
+                .setText("" + message)
+                .show();
+    }
+    private void getAllUsers(List<Integer> targetIds) {
+
+        Call<List<Users>> call = userApi.getUsers();
+        call.enqueue(new Callback<List<Users>>() {
+            @Override
+            public void onResponse(Call<List<Users>> call, Response<List<Users>> response) {
+                if (response.isSuccessful()) {
+                    List<Users> allUsers = response.body();
+                    if (allUsers != null) {
+                        // Filter the users based on targetIds
+                        List<Users> filteredUsers = new ArrayList<>();
+                        for (Users user : allUsers) {
+                            if (targetIds.contains(user.getId())) {
+                                filteredUsers.add(user);
+                            }
+                        }
+
+                        // Extract user IDs from the filtered users
+                        List<String> filteredUserIds = new ArrayList<>();
+                        for (Users user : filteredUsers) {
+                            filteredUserIds.add(user.getUserid()); // Assuming getUserId() returns the Firebase User ID
+                        }
+
+                        // Fetch user stories for the filtered user IDs
+                        fetchUserStories(filteredUserIds);
+
+                    } else {
+                        // Handle the case where the user list is null
+                        showToast("Users list is empty");
+                    }
+                } else {
+                    // Handle unsuccessful response
+                    showToast("Failed to fetch data: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Users>> call, Throwable t) {
+                // Handle network error
+                showToast("Network error: " + t.getMessage());
+            }
+        });
+    }
+    private String getCurrentUserId() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            return currentUser.getUid();
+        } else {
+            return null;
+        }
+    }
+
+
 }
 
 

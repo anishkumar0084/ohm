@@ -126,8 +126,8 @@ public class NameActivity extends AppCompatActivity {
 
     private void addUsername(String name) {
 
-        Users userUpdateRequest = new Users(Integer.parseInt(userId), name, null,null,null,null,null,null,null,null,null,true,null,null);
-        ModelPost modelPost = new ModelPost(null,userId,null,name,null,null,null,null,null,null,null,null);
+        Users userUpdateRequest = new Users(Integer.parseInt(userId), name, null,null,null,null,null,null,null,null,null,null,null,null,null);
+        ModelPost modelPost = new ModelPost(null,userId,null,name,null,null,null,null,null,null,null,null,null);
         Call<Void> call2 = userApi.updateModelPost(Integer.parseInt(userId),modelPost);
         call2.enqueue(new Callback<Void>() {
             @Override

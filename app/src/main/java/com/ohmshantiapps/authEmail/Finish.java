@@ -12,9 +12,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.gson.JsonObject;
 import com.ohmshantiapps.MainActivity;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.tapadoo.alerter.Alerter;
 
@@ -42,12 +44,8 @@ public class Finish extends AppCompatActivity {
 
         SessionManager sessionManager = new SessionManager(getApplicationContext());
 
-        // Initialize Retrofit
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://68.183.245.154/") // Base URL of your API
-                .addConverterFactory(ScalarsConverterFactory.create())
-                .build();
-        mApiService = retrofit.create(ApiService.class);
+
+        mApiService = RetrofitClient.getClient().create(ApiService.class);
 
         button.setOnClickListener(view -> {
             progressBar3.setVisibility(View.VISIBLE);
@@ -85,44 +83,48 @@ public class Finish extends AppCompatActivity {
         });
     }
 
-    // Method to insert username into the database
     private void insertUsername(String username, String userId) {
-        Call<String> call = mApiService.updateUsername(username, userId);
-        call.enqueue(new Callback<String>() {
+        Call<JsonObject> call = mApiService.updateUsername(username, userId);
+        call.enqueue(new Callback<JsonObject>() {
             @Override
-            public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
-                if (response.isSuccessful()) {
-                    // Username inserted successfully, proceed to MainActivity
-                    Intent intent = new Intent(Finish.this, MainActivity.class);
-                    startActivity(intent);
-                    finish();
+            public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    JsonObject responseObject = response.body();
+                    String status = responseObject.get("status").getAsString();
+                    if (status.equals("success")) {
+                        // Username updated successfully, proceed to MainActivity
+                        Intent intent = new Intent(Finish.this, MainActivity.class);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        // Handle failure to update username
+                        String message = responseObject.get("message").getAsString();
+                        showError(message);
+                    }
                 } else {
-                    // Handle failure to insert username
-                    Alerter.create(Finish.this)
-                            .setTitle("Error")
-                            .setIcon(R.drawable.ic_error)
-                            .setBackgroundColorRes(R.color.colorPrimary)
-                            .setDuration(10000)
-                            .enableSwipeToDismiss()
-                            .setText("Failed to insert username")
-                            .show();
+                    showError("Failed to update username");
                 }
                 progressBar3.setVisibility(View.INVISIBLE);
             }
 
             @Override
-            public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<JsonObject> call, @NonNull Throwable t) {
                 // Handle network or other errors
+                showError("Failed to update username: " + t.getMessage());
+                progressBar3.setVisibility(View.INVISIBLE);
+            }
+
+            private void showError(String message) {
                 Alerter.create(Finish.this)
                         .setTitle("Error")
                         .setIcon(R.drawable.ic_error)
                         .setBackgroundColorRes(R.color.colorPrimary)
                         .setDuration(10000)
                         .enableSwipeToDismiss()
-                        .setText("Failed to insert username: " + t.getMessage())
+                        .setText(message)
                         .show();
-                progressBar3.setVisibility(View.INVISIBLE);
             }
         });
     }
+
 }

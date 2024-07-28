@@ -9,6 +9,8 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 import com.ohmshantiapps.R;
+import com.ohmshantiapps.authEmail.SignIn;
+import com.ohmshantiapps.authEmail.SignUp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +55,7 @@ public class IntroActivity extends AppCompatActivity {
 
         //Skip btn click
         skip.setOnClickListener(v -> {
-            Intent intent = new Intent(getApplicationContext(), IntroLast.class );
+            Intent intent = new Intent(getApplicationContext(), SignUp.class );
             startActivity(intent);
             finish();
         });
@@ -98,7 +100,7 @@ public class IntroActivity extends AppCompatActivity {
     }
 
     private void loadLastScreen() {
-        Intent intent = new Intent(getApplicationContext(), IntroLast.class );
+        Intent intent = new Intent(getApplicationContext(), SignUp.class );
         startActivity(intent);
         finish();
     }

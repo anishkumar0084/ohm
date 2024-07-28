@@ -1,8 +1,10 @@
 package com.ohmshantiapps.menu;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -25,6 +27,7 @@ import com.ohmshantiapps.SharedPref;
 import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
+import com.ohmshantiapps.authEmail.ForgotPassword;
 import com.ohmshantiapps.authEmail.SignIn;
 import com.ohmshantiapps.user.MyFollowing;
 import com.ohmshantiapps.welcome.IntroLast;
@@ -38,7 +41,7 @@ public class Menu extends AppCompatActivity {
     private String baseUrl = "http://68.183.245.154/user/";
     private SharedPreferences sharedPreferences;
     FirebaseUser firebaseUser;
-    ConstraintLayout logout,save,followers,following,invite,policy,delete,email,password;
+    ConstraintLayout logout,save,Reward,about,Support,Feedback,email,password;
     Switch aSwitch;
     SharedPref sharedPref;
     private static final String PREF_NAME = "MyPrefs";
@@ -60,30 +63,17 @@ public class Menu extends AppCompatActivity {
         firebaseUser = mAuth.getCurrentUser();
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         logout = findViewById(R.id.logout);
-
+        Support = findViewById(R.id.support);
+        Feedback = findViewById(R.id.feedback);
+        Reward = findViewById(R.id.Reward);
+        about = findViewById(R.id.about);
         aSwitch = findViewById(R.id.mySwitch);
-//        policy = findViewById(R.id.policy);
-//        delete = findViewById(R.id.delete);
         imageView3 = findViewById(R.id.imageView3);
         imageView3.setOnClickListener(v -> onBackPressed());
-//        invite = findViewById(R.id.invite);
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
 
         apiService = RetrofitClient.getClient().create(ApiService.class);
-//        policy.setOnClickListener(v -> {
-//            Intent intent = new Intent(Menu.this, Policy.class);
-//            startActivity(intent);
-//        });
-
-//        invite.setOnClickListener(v -> {
-//            String shareBody = "Myfriends - Friends Social Network" + " Download now on play store \nhttps://play.google.com/store/apps/details?id=com.ohm.shantiapp";
-//            Intent intent = new Intent(Intent.ACTION_SEND);
-//            intent.setType("text/*");
-//            intent.putExtra(Intent.EXTRA_SUBJECT,"Subject Here");
-//            intent.putExtra(Intent.EXTRA_TEXT,shareBody);
-//            startActivity(Intent.createChooser(intent, "Share Via"));
-//        });
         if (sharedPref.loadNightModeState()){
             aSwitch.setChecked(true);
         }
@@ -102,10 +92,16 @@ public class Menu extends AppCompatActivity {
             sharedPref.setNightModeState(false);
             checkUserStatus();
         });
-        save.setOnClickListener(v -> {
-            Intent intent = new Intent(Menu.this, Saved.class);
-            startActivity(intent);
+
+        Feedback.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                openPlayStoreReview();
+
+            }
         });
+
 //        delete.setOnClickListener(v -> {
 //            AlertDialog.Builder builder = new AlertDialog.Builder(Menu.this);
 //            builder.setTitle("Delete Account");
@@ -118,15 +114,7 @@ public class Menu extends AppCompatActivity {
 //        });
 
 
-        email.setOnClickListener(v -> {
-
-
-
-        });
-        password.setOnClickListener(v -> {
-            Intent intent = new Intent(Menu.this, ChangePassword.class);
-            startActivity(intent);
-        });
+      setupButtonClickListeners();
 
 
 
@@ -222,4 +210,36 @@ public class Menu extends AppCompatActivity {
         editor.apply();
 
     }
+    private void setupButtonClickListeners() {
+        setButtonClickListener(Support, Support.class);
+        setButtonClickListener(about, About.class);
+        setButtonClickListener(Reward, Reward.class);
+        setButtonClickListener(email, AccountStatus.class);
+        setButtonClickListener(password, ForgotPassword.class);
+        setButtonClickListener(save, Saved.class);
+    }
+
+    private void setButtonClickListener(View button, final Class<?> targetActivity) {
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Menu.this, targetActivity);
+                startActivity(intent);
+            }
+        });
+    }
+    private void openPlayStoreReview() {
+        Uri uri = Uri.parse("market://details?id=" + getPackageName());
+        Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
+        goToMarket.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY |
+                Intent.FLAG_ACTIVITY_NEW_DOCUMENT |
+                Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+        try {
+            startActivity(goToMarket);
+        } catch (ActivityNotFoundException e) {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("http://play.google.com/store/apps/details?id=" + getPackageName())));
+        }
+    }
+
 }

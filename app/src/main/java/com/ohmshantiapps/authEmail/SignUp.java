@@ -15,6 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -32,6 +33,7 @@ import com.ohmshantiapps.api.ApiService;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.menu.Policy;
+import com.ohmshantiapps.model.User;
 import com.tapadoo.alerter.Alerter;
 
 import java.util.HashMap;
@@ -158,6 +160,7 @@ public class SignUp extends AppCompatActivity {
         Button verifyButton = dialogView.findViewById(R.id.verify_button);
 
         AlertDialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false);
 
         otpView.setOtpCompletionListener(new OnOtpCompletionListener() {
             @Override
@@ -194,7 +197,7 @@ public class SignUp extends AppCompatActivity {
             if (task.isSuccessful()) {
                 FirebaseUser firebaseUser = mAuth.getCurrentUser();
                 if (firebaseUser != null) {
-                    saveUserData(firebaseUser.getUid(), name, email);
+                    saveUserData(firebaseUser.getUid(), name, email,password);
                 }
             } else {
                 hideLoadingMessage();
@@ -203,25 +206,13 @@ public class SignUp extends AppCompatActivity {
         });
     }
 
-    private void saveUserData(String userId, String name, String email) {
-        reference = FirebaseDatabase.getInstance().getReference().child("Users").child(userId);
+    private void saveUserData(String userId, String name, String email,String mPassword) {
+        reference = FirebaseDatabase.getInstance().getReference().child("users").child(userId);
 
-        HashMap<String, Object> userData = new HashMap<>();
-        userData.put("id", userId);
-        userData.put("name", name);
-        userData.put("email", email);
-        userData.put("username", "");
-        userData.put("bio", "");
-        userData.put("verified", "");
-        userData.put("location", "");
-        userData.put("status", "online");
-        userData.put("typingTo", "noOne");
-        userData.put("link", "");
-        userData.put("photo", "https://firebasestorage.googleapis.com/v0/b/memespace-34a96.appspot.com/o/avatar.jpg?alt=media&token=8b875027-3fa4-4da4-a4d5-8b661d999472");
-
-        reference.setValue(userData).addOnCompleteListener(task -> {
+        User user=new User(userId,name,email,"https://firebasestorage.googleapis.com/v0/b/memespace-34a96.appspot.com/o/avatar.jpg?alt=media&token=8b875027-3fa4-4da4-a4d5-8b661d999472");
+        reference.setValue(user).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                registerWithApi(name, email,mPassword.toString());
+                registerWithApi(name, email,mPassword);
             } else {
                 hideLoadingMessage();
                 showErrorAlert("Failed to save user data.");
@@ -244,15 +235,15 @@ public class SignUp extends AppCompatActivity {
                             sessionManager.storeUserId(userId);
                             navigateToFinishActivity();
                         } else {
-                            showErrorAlert(REGISTRATION_FAILED);
+                            showErrorAlert(REGISTRATION_FAILED+response.message());
                         }
                     } else {
-                        showErrorAlert(REGISTRATION_FAILED);
+                        showErrorAlert(REGISTRATION_FAILED+response.message());
                         hideLoadingMessage();
 
                     }
                 } else {
-                    showErrorAlert(REGISTRATION_FAILED);
+                    showErrorAlert(REGISTRATION_FAILED+response.message());
                     hideLoadingMessage();
 
                 }
@@ -261,7 +252,7 @@ public class SignUp extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
                 hideLoadingMessage();
-                showErrorAlert(REGISTRATION_FAILED);
+                showErrorAlert(REGISTRATION_FAILED+t.getMessage());
             }
         });
     }

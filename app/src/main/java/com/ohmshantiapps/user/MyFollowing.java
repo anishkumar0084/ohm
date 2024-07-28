@@ -100,10 +100,6 @@ public class MyFollowing extends AppCompatActivity {
                         List<Integer> followersList = data.getFollowers();
                         List<Integer> followingList = data.getFollowing();
 
-                        Toast.makeText(MyFollowing.this, ""+followersList, Toast.LENGTH_SHORT).show();
-                        Toast.makeText(MyFollowing.this, ""+followingList, Toast.LENGTH_SHORT).show();
-
-
                         switch (title){
                             case "following":
                                 getAllUsers(followingList);

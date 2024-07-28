@@ -1,8 +1,7 @@
 <resources>
 
-    <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!-- Customize your theme here -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -19,6 +18,23 @@
         <item name="search">#003d92</item>
         <item name="following">@color/colorPrimary</item>
     </style>
+
+    <!-- Theme for activities using Material Components -->
+    <style name="AppTheme.MaterialComponents" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="android:colorBackground">#F2F3FA</item>
+        <item name="textcolor">#161F3D</item>
+        <item name="selectedcolor">#0047ab</item>
+        <item name="defaultcolor">#7F0047AB</item>
+        <item name="headercolor">#0047ab</item>
+        <item name="headertextcolor">#fff</item>
+        <!-- Add other custom attributes if needed -->
+    </style>
+
 
     <style name="DarkTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
@@ -85,6 +101,7 @@
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorControlNormal">@color/white</item>
     </style>
+
 
 
 </resources>

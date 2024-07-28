@@ -136,7 +136,7 @@ public class LocationActivity extends AppCompatActivity {
     }
 
     private void addUsername(String name) {
-        Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,name,null,null,null,null,null,true,null,null);
+        Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,null,null,name,null,null,null,null,null,null,null,null,null);
         Call<Void> call1 = userApi.updateUser(Integer.parseInt(userId), userUpdateRequest);
         call1.enqueue(new Callback<Void>() {
             @Override

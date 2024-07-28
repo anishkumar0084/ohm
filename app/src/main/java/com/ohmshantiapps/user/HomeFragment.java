@@ -42,6 +42,7 @@ import com.tapadoo.alerter.Alerter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -165,34 +166,29 @@ public class HomeFragment extends Fragment {
                     Users user = response.body();
                     if (user != null) {
 
-                        String photoUrl = user.getPhoto();
-                        String userIds=user.getUserid();
+                        FirebaseUser user1 = FirebaseAuth.getInstance().getCurrentUser();
 
-                        User userk = new User(userIds, user.getName(), user.getEmail(), user.getPhoto());
+                        if (user.getPhoto() != null){
 
-                        database.getReference()
-                                .child("users")
-                                .child(userIds)
-                                .setValue(userk)
-                                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                    @Override
-                                    public void onSuccess(Void aVoid) {
-
-                                    }
-                                });
+                            String photoUrl = user.getPhoto();
 
 
-                        if (userIds.isEmpty()){
+                        Map<String, Object> updates = new HashMap<>();
+                        updates.put("profileImage", photoUrl);
+                        database.getReference().child("users").child(user1.getUid()).updateChildren(updates).addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
 
-                            FirebaseUser firebaseUser = mAuth.getCurrentUser();
-                            String userid = Objects.requireNonNull(firebaseUser).getUid();
+                            }
+                        });
+                         }
+
+                        if (user.getUserid()==null) {
                             apiService = RetrofitClient.getClient().create(ApiService.class);
 
+                            Users userUpdateRequest = new Users(Integer.parseInt(String.valueOf(userId)), null, null, null, null, null, null, null, null, null, null, null, null, user1.getUid(),null);
 
-
-                            Users userUpdateRequest = new Users(Integer.parseInt(String.valueOf(userId)), null, null,null,null,null,null,null,null,null,null,true,null,userid);
-
-                            Call<Void> call1 =apiService.updateUser(Integer.parseInt(String.valueOf(userId)), userUpdateRequest);
+                            Call<Void> call1 = apiService.updateUser(Integer.parseInt(String.valueOf(userId)), userUpdateRequest);
                             call1.enqueue(new Callback<Void>() {
                                 @Override
                                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -206,23 +202,11 @@ public class HomeFragment extends Fragment {
                                 public void onFailure(Call<Void> call, Throwable t) {
                                 }
                             });
-
-                        }else {
-                            HashMap<String, Object> hashMap = new HashMap<>();
-                            hashMap.put("photo", "" + photoUrl);
-                            hashMap.put("bio", "" + userId);
-                            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Users");
-                            reference.child(Objects.requireNonNull(userIds)).updateChildren(hashMap)
-                                    .addOnSuccessListener(aVoid -> {
-
-                                    })
-                                    .addOnFailureListener(e -> {
-
-                                    });
                         }
+
                         try {
                             Glide.with(getActivity())
-                                    .load(photoUrl)
+                                    .load(user.getPhoto())
                                     .apply(new RequestOptions()
                                             .error(R.drawable.avatar))  // Set the error placeholder
                                     .into(circular);
@@ -271,34 +255,6 @@ public class HomeFragment extends Fragment {
                 .show();
     }
 
-
-
-
-//    private void checkSFollowing(){
-//        followingSList = new ArrayList<>();
-//        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Follow")
-//                .child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
-//                .child("Following");
-//        reference.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                followingSList.clear();
-//                for (DataSnapshot snapshot : dataSnapshot.getChildren()){
-//                    followingSList.add(snapshot.getKey());
-//                }
-//                readStory();
-//
-//
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//
-//    }
-
     private void fetchFollowingUsers(int followerId) {
         Call<List<Integer>> followingUsersCall = apiService.getFollowingUsers("getFollowingUsers", followerId);
         followingUsersCall.enqueue(new Callback<List<Integer>>() {
@@ -320,6 +276,8 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onFailure(Call<List<Integer>> call, Throwable t) {
+                Toast.makeText(getActivity(), "Failed to fetch posts: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+
                 // Handle failure
             }
         });
@@ -356,42 +314,11 @@ public class HomeFragment extends Fragment {
 
                 @Override
                 public void onFailure(Call<List<ModelPost>> call, Throwable t) {
-                    // Handle failure
+
+
                 }
             });
         }
     }
-
-
-//    private void readStory(){
-//        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Story");
-//        reference.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                long timecurrent = System.currentTimeMillis();
-//                storyList.clear();
-//                storyList.add(new ModelStory("",0,0,"", Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid()));
-//                for (String id : followingSList){
-//                    int countStory = 0;
-//                    ModelStory modelStory = null;
-//                    for (DataSnapshot snapshot1 : snapshot.child(id).getChildren()){
-//                        modelStory = snapshot1.getValue(ModelStory.class);
-//                        if (timecurrent > Objects.requireNonNull(modelStory).getTimestart() && timecurrent < modelStory.getTimeend()){
-//                            countStory++;
-//                        }
-//                    }
-//                    if (countStory > 0){
-//                        storyList.add(modelStory);
-//                    }
-//                }
-//                story.notifyDataSetChanged();
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError error) {
-//
-//            }
-//        });
-//    }
 
 }

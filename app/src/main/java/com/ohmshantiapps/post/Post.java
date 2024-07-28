@@ -429,7 +429,7 @@ public class Post extends AppCompatActivity {
                                 String imageUrl = jsonResponse.getString("imageUrl");
 
                                 String timeStamp = String.valueOf(System.currentTimeMillis());
-                                ModelPost modelPost = new ModelPost(dp, id, imageUrl, name, null, timeStamp, timeStamp, mText, "noVideo", "Image", null, null);
+                                ModelPost modelPost = new ModelPost(dp, id, imageUrl, name, null, timeStamp, timeStamp, mText, "noVideo", "Image", null, null,null);
                                 userApiClient.insertModelPost(modelPost);
                                 runOnUiThread(() -> {
                                     text.setText("");
@@ -460,24 +460,47 @@ public class Post extends AppCompatActivity {
             });
         } else {
             String timeStamp = String.valueOf(System.currentTimeMillis());
-            ModelPost modelPost = new ModelPost(dp, id, "noImage", name, "1", timeStamp, timeStamp, mText, "noVideo", "Text", "1", "1");
-            userApiClient.insertModelPost(modelPost);
-            runOnUiThread(() -> {
-                text.setText("");
-                meme.setImageURI(null);
-                image_uri = null;
-                remove_lt.setVisibility(View.GONE);
-                pd.setVisibility(View.GONE);
-                type.setText("Text");
-                Alerter.create(Post.this)
-                        .setTitle("Successful")
-                        .setIcon(R.drawable.ic_check_wt)
-                        .setBackgroundColorRes(R.color.colorPrimaryDark)
-                        .setDuration(10000)
-                        .enableSwipeToDismiss()
-                        .setText("Post Uploaded")
-                        .show();
+            Toast.makeText(this, "Post Uploaded"+id, Toast.LENGTH_SHORT).show();
+            ModelPost modelPost = new ModelPost(dp, id, "noImage", name, "1", timeStamp,"", mText, "noVideo", "Text", "1", "1","");
+            Call<Void> call=apiService.insertModelPost(modelPost);
+            call.enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        runOnUiThread(() -> {
+                            text.setText("");
+                            meme.setImageURI(null);
+                            image_uri = null;
+                            remove_lt.setVisibility(View.GONE);
+                            pd.setVisibility(View.GONE);
+                            type.setText("Text");
+                            Alerter.create(Post.this)
+                                    .setTitle("Successful")
+                                    .setIcon(R.drawable.ic_check_wt)
+                                    .setBackgroundColorRes(R.color.colorPrimaryDark)
+                                    .setDuration(10000)
+                                    .enableSwipeToDismiss()
+                                    .setText("Post Uploaded")
+                                    .show();
+                        });
+
+                    } else {
+
+                    }
+
+//
+
+
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable throwable) {
+                    Toast.makeText(Post.this, "Failed to upload image."+throwable.getMessage(), Toast.LENGTH_SHORT).show();
+//
+
+                }
             });
+
 
         }
     }
@@ -552,7 +575,7 @@ public class Post extends AppCompatActivity {
                             String videoUrl = jsonResponse.getString("videoUrl");
 
                             String timeStamp = String.valueOf(System.currentTimeMillis());
-                            ModelPost modelPost = new ModelPost(dp, id, "noImage", name, "1", timeStamp, timeStamp, mText, videoUrl, type, "1", "1");
+                            ModelPost modelPost = new ModelPost(dp, id, "noImage", name, "1", timeStamp, timeStamp, mText, videoUrl, type, "1", "1",null);
                             userApiClient.insertModelPost(modelPost);
                             runOnUiThread(() -> {
                                 text.setText("");

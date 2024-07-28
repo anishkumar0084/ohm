@@ -39,9 +39,12 @@ public class ModelPost {
     @SerializedName("pViews")
     private String pViews;
 
-    // Constructors
+    @SerializedName("coinsEarned")
+    private String coinsEarned;
 
-    public ModelPost(String dp, String id, String meme, String name, String pLikes, String pId, String pTime, String text, String vine, String type, String pComments, String pViews) {
+// Constructors
+
+    public ModelPost(String dp, String id, String meme, String name, String pLikes, String pId, String pTime, String text, String vine, String type, String pComments, String pViews,String  coinsEarned) {
         this.dp = dp;
         this.id = id;
         this.meme = meme;
@@ -54,9 +57,19 @@ public class ModelPost {
         this.type = type;
         this.pComments = pComments;
         this.pViews = pViews;
+        this.coinsEarned=coinsEarned;
+
     }
 
-    // Getters and Setters
+
+    public String  getCoinsEarned() {
+        return coinsEarned;
+    }
+
+    public void setCoinsEarned(String  coinsEarned) {
+        this.coinsEarned = coinsEarned;
+    }
+
     public String getDp() {
         return dp;
     }
@@ -169,6 +182,7 @@ public class ModelPost {
                 ", type='" + type + '\'' +
                 ", pComments='" + pComments + '\'' +
                 ", pViews='" + pViews + '\'' +
+                ", coinsEarned='" + coinsEarned + '\'' +
                 '}';
     }
 }

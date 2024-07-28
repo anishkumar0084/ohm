@@ -122,7 +122,7 @@ public class UsernameActivity extends AppCompatActivity {
     }
 
     private void addUsername(String username) {
-        Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,username,null,null,null,null,null,null,null,true,null,null);
+        Users userUpdateRequest = new Users(Integer.parseInt(userId), null, null,username,null,null,null,null,null,null,null,null,null,null,null);
         Call<Void> call1 = userApi.updateUser(Integer.parseInt(userId), userUpdateRequest);
         call1.enqueue(new Callback<Void>() {
             @Override

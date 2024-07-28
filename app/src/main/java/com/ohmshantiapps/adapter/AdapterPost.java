@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -42,18 +43,15 @@ import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.muddzdev.styleabletoastlibrary.StyleableToast;
 import com.ohmshantiapps.Adpref;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.api.ApiService;
+import com.ohmshantiapps.api.IsPostSavedCallback;
 import com.ohmshantiapps.api.CommentCountResponse;
 import com.ohmshantiapps.api.DeleteRequestBody;
 import com.ohmshantiapps.api.DeleteResponse;
@@ -61,7 +59,7 @@ import com.ohmshantiapps.api.LikeResponse;
 import com.ohmshantiapps.api.RetrofitClient;
 import com.ohmshantiapps.api.SessionManager;
 import com.ohmshantiapps.api.UniqueLinkResponse;
-import com.ohmshantiapps.groups.ShareGroupActivity;
+import com.ohmshantiapps.menu.Saved;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.post.PostDetails;
 import com.ohmshantiapps.post.PostLikedBy;
@@ -73,8 +71,6 @@ import com.ohmshantiapps.user.UserProfile;
 import com.ohmshantiapps.welcome.GetTimeAgo;
 import com.pedromassango.doubleclick.DoubleClick;
 import com.pedromassango.doubleclick.DoubleClickListener;
-import com.squareup.picasso.OkHttp3Downloader;
-import com.squareup.picasso.Picasso;
 import com.volokh.danylo.hashtaghelper.HashTagHelper;
 
 import org.json.JSONException;
@@ -86,13 +82,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -103,20 +99,27 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     Context context;
     List<ModelPost> postList;
     private boolean isLiked = false;
-
     private String userId;
     private final DatabaseReference postsRef1;
     boolean mProcessLike = false;
     boolean mProcessView = false;
 
     ApiService apiService;
+    private OnUnsaveClickListener onUnsaveClickListener;
 
     public AdapterPost(Context context, List<ModelPost> postList) {
         this.context = context;
         this.postList = postList;
         postsRef1 = FirebaseDatabase.getInstance().getReference().child("Posts");
-         apiService = RetrofitClient.getClient().create(ApiService.class);
+        apiService = RetrofitClient.getClient().create(ApiService.class);
 
+    }
+    public interface OnUnsaveClickListener {
+        void onUnsaveClick(int position);
+    }
+
+    public void setOnUnsaveClickListener(OnUnsaveClickListener listener) {
+        this.onUnsaveClickListener = listener;
     }
 
 
@@ -127,8 +130,6 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         context = parent.getContext();
         return new MyHolder(view);
     }
-
-
 
 
     @SuppressLint("SetTextI18n")
@@ -144,16 +145,15 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         String vine = postList.get(position).getVine();
         String type = postList.get(position).getType();
         String pViews = postList.get(position).getpViews();
-        String comment = postList.get(position).getpComments();
 
         SessionManager sessionManager = new SessionManager(context);
 
-        userId =sessionManager.getUserId();
+        userId = sessionManager.getUserId();
 
 
         //Time
         GetTimeAgo getTimeAgo = new GetTimeAgo();
-        long lastTime = Long.parseLong(pTime);
+        long lastTime = Long.parseLong(pId);
         String lastSeenTime = GetTimeAgo.getTimeAgo(lastTime);
 
         //Set Data
@@ -174,8 +174,6 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         }
 
 
-
-
         setLikes(holder, pId);
         setViews(holder, pId);
         String ed_text = holder.pText.getText().toString().trim();
@@ -187,11 +185,10 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         }
 
 
-
         HashTagHelper mTextHashTagHelper = HashTagHelper.Creator.create(context.getResources().getColor(R.color.colorPrimary), hashTag -> {
             Intent intent1 = new Intent(context, Search.class);
-            intent1.putExtra("hashTag",hashTag);
-           context.startActivity(intent1);
+            intent1.putExtra("hashTag", hashTag);
+            context.startActivity(intent1);
         });
 
         mTextHashTagHelper.handle(holder.pText);
@@ -202,8 +199,8 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         holder.like.setOnClickListener(v -> {
             mProcessLike = true;
             String postId = String.valueOf(postList.get(position).getpId());
-                likePost(postId, userId,holder,position);
-                mProcessLike = false;
+            likePost(postId, userId, holder, position);
+            mProcessLike = false;
 //
         });
 
@@ -220,32 +217,30 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 String postId = String.valueOf(postList.get(position).getId());
 
 
-                        if (mProcessView) {
+                if (mProcessView) {
 
-                            if (postId.equals(userId)) {
-                                mProcessView = false;
-                                Intent intent = new Intent(context, PostDetails.class);
-                                intent.putExtra("postId", pId);
-                                intent.putExtra("postIds", postId);
-                                context.startActivity(intent);
-                            } else {
-                                mProcessView = false;
-                                Intent intent = new Intent(context, PostDetails.class);
-                                intent.putExtra("postId", pId);
-                                intent.putExtra("postIds", "0");
-                                context.startActivity(intent);
+                    if (postId.equals(userId)) {
+                        mProcessView = false;
+                        Intent intent = new Intent(context, PostDetails.class);
+                        intent.putExtra("postId", pId);
+                        intent.putExtra("postIds", postId);
+                        context.startActivity(intent);
+                    } else {
+                        mProcessView = false;
+                        Intent intent = new Intent(context, PostDetails.class);
+                        intent.putExtra("postId", pId);
+                        intent.putExtra("postIds", "0");
+                        context.startActivity(intent);
 
 //                                addToHisNotification(""+id,""+pId,"Viewed  your post");
-                            }
-                        }
                     }
-
-
+                }
+            }
 
 
         });
         //Share
-        holder.share.setOnClickListener(v -> shareMoreOptions(holder.share,holder, pId));
+        holder.share.setOnClickListener(v -> shareMoreOptions(holder.share, holder, pId));
 
         //Click
         holder.pName.setOnClickListener(v -> {
@@ -259,8 +254,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
             context.startActivity(intent);
         });
 
-        holder.more.setOnClickListener(v -> showMoreOptions(holder.more, id, userId, pId, meme, vine,position));
-
+        holder.more.setOnClickListener(v -> showMoreOptions(holder.more, id, userId, pId, meme, vine, position));
 
 
         RequestOptions requestOptions = new RequestOptions()
@@ -279,8 +273,8 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         } else {
 
             RequestOptions requestOptions1 = new RequestOptions()
-                    .placeholder(R.drawable.avatar)  // Placeholder with loading animation
-                    .diskCacheStrategy(DiskCacheStrategy.ALL);  // Cache strategy for better performance
+                    .placeholder(R.drawable.avatar)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL);
 
             Glide.with(context)
                     .load(meme)
@@ -304,18 +298,15 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                         }
                     });
 
-//
 
         }
 
-        if (meme.equals("noImage") &&  vine.equals("noVideo")){
+        if (meme.equals("noImage") && vine.equals("noVideo")) {
             holder.load.setVisibility(View.GONE);
         }
 
 
-
         Uri uri = Uri.parse(vine);
-        //Post Vine
         if (vine.equals("noVideo")) {
             holder.video_share.setVisibility(View.GONE);
             holder.pVine.setVisibility(View.GONE);
@@ -332,19 +323,16 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         }
 
 
-        holder.video_share.setOnClickListener(v -> vidshareMoreOptions(holder.video_share, pId,vine,text));
-
-
+        holder.video_share.setOnClickListener(v -> vidshareMoreOptions(holder.video_share, pId, vine, text));
 
 
         Adpref adpref;
         adpref = new Adpref(context);
-        if (adpref.loadAdsModeState()){
-            if (!vine.equals("noVideo")){
+        if (adpref.loadAdsModeState()) {
+            if (!vine.equals("noVideo")) {
 //                holder.ad.setVisibility(View.VISIBLE);
             }
         }
-
 
 
         holder.viewlt.setOnClickListener(new DoubleClick(new DoubleClickListener() {
@@ -385,8 +373,8 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 mProcessLike = true;
                 String postId = String.valueOf(postList.get(position).getpId());
 
-                    likePost(postId, userId,holder,position);
-                    mProcessLike = false;
+                likePost(postId, userId, holder, position);
+                mProcessLike = false;
 
 //                addToHisNotification(""+id,""+pId,"Liked your post");
 //
@@ -406,25 +394,24 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                     mProcessView = true;
                     String postId = String.valueOf(postList.get(position).getpId());
 
-                            if (mProcessView) {
-                                if (postId.equals(id)) {
-                                    mProcessView = false;
-                                    Intent intent = new Intent(context, PostDetails.class);
-                                    intent.putExtra("postId", pId);
-                                    intent.putExtra("postIds", id);
+                    if (mProcessView) {
+                        if (postId.equals(id)) {
+                            mProcessView = false;
+                            Intent intent = new Intent(context, PostDetails.class);
+                            intent.putExtra("postId", pId);
+                            intent.putExtra("postIds", id);
 
-                                    context.startActivity(intent);
-                                } else {
-                                    postsRef1.child(postId).child("pViews").setValue("" + (pViews + 1));
-                                    mProcessView = false;
-                                    Intent intent = new Intent(context, PostDetails.class);
-                                    intent.putExtra("postId", pId);
-                                    context.startActivity(intent);
-                                    intent.putExtra("postIds", "0");
+                            context.startActivity(intent);
+                        } else {
+                            postsRef1.child(postId).child("pViews").setValue("" + (pViews + 1));
+                            mProcessView = false;
+                            Intent intent = new Intent(context, PostDetails.class);
+                            intent.putExtra("postId", pId);
+                            context.startActivity(intent);
+                            intent.putExtra("postIds", "0");
 //                                    addToHisNotification(""+id,""+pId,"Viewed  your post");
-                                }
-                            }
-
+                        }
+                    }
 
 
                 }
@@ -435,13 +422,13 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 mProcessLike = true;
                 String postId = String.valueOf(postList.get(position).getpId());
 
-                    likePost(postId, userId,holder,position);
-                    mProcessLike = false;
+                likePost(postId, userId, holder, position);
+                mProcessLike = false;
             }
         }));
 
-        noLike(position,holder);
-        noComment(position,holder);
+        noLike(position, holder);
+        noComment(position, holder);
 
     }
 
@@ -450,39 +437,38 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         call.enqueue(new Callback<UniqueLinkResponse>() {
             @Override
             public void onResponse(Call<UniqueLinkResponse> call, Response<UniqueLinkResponse> response) {
-                if (response.isSuccessful()){
+                if (response.isSuccessful()) {
                     Toast.makeText(context, "Link Generated", Toast.LENGTH_SHORT).show();
-                }else {
+                } else {
                     Toast.makeText(context, "Failed to generate link", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<UniqueLinkResponse> call, Throwable throwable) {
-                Toast.makeText(context, "Failed to generate link"+throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Failed to generate link" + throwable.getMessage(), Toast.LENGTH_SHORT).show();
 
             }
         });
     }
 
-    private void noComment(int position,MyHolder holder){
+    private void noComment(int position, MyHolder holder) {
         String postId = String.valueOf(postList.get(position).getpId());
 
-        Call<CommentCountResponse> call=apiService.getCommentCount(postId,"true");
+        Call<CommentCountResponse> call = apiService.getCommentCount(postId, "true");
         call.enqueue(new retrofit2.Callback<CommentCountResponse>() {
             @Override
             public void onResponse(Call<CommentCountResponse> call, Response<CommentCountResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     int commentCount = response.body().getCommentCount();
 
-                        if (commentCount==0) {
-                            holder.commentNo.setText("Comment");
+                    if (commentCount == 0) {
+                        holder.commentNo.setText("Comment");
 
-                        } else {
+                    } else {
 
-                            holder.commentNo.setText(formatViews(commentCount));
-                        }
-
+                        holder.commentNo.setText(formatViews(commentCount));
+                    }
 
 
                 } else {
@@ -494,8 +480,6 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
             }
         });
-
-
 
 
     }
@@ -511,15 +495,15 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 if (response.isSuccessful() && response.body() != null) {
                     LikeResponse likeResponse = response.body();
                     List<String> userIds = likeResponse.getUserIds();
-                    String likes= String.valueOf(likeResponse.getLikeCount());
+                    String likes = String.valueOf(likeResponse.getLikeCount());
 
 
-                    if (likes.equals("0")||likes==null) {
-                      holder.likeNo.setText("Like");
+                    if (likes.equals("0") || likes == null) {
+                        holder.likeNo.setText("Like");
 
-                   }else {
-                        holder.likeNo.setText(formatViews(Long.parseLong(likes))+"");
-                   }
+                    } else {
+                        holder.likeNo.setText(formatViews(Long.parseLong(likes)) + "");
+                    }
 
 
                 } else {
@@ -538,22 +522,22 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     private void vidshareMoreOptions(RelativeLayout video_share, String pId, String vine, String text) {
         PopupMenu popupMenu = new PopupMenu(context, video_share, Gravity.END);
 
-        popupMenu.getMenu().add(Menu.NONE,0,0, "In chats");
-        popupMenu.getMenu().add(Menu.NONE,1,0, "To apps");
+        popupMenu.getMenu().add(Menu.NONE, 0, 0, "In chats");
+        popupMenu.getMenu().add(Menu.NONE, 1, 0, "To apps");
         popupMenu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
-            if (id==0){
+            if (id == 0) {
 
                 Intent intent = new Intent(context, ShareActivity.class);
                 intent.putExtra("postId", pId);
                 context.startActivity(intent);
 
-            }else if (id==1){
+            } else if (id == 1) {
 
                 Intent intent2 = new Intent(Intent.ACTION_SEND);
                 intent2.setType("text/*");
-                intent2.putExtra(Intent.EXTRA_SUBJECT,"Subject Here");
-                intent2.putExtra(Intent.EXTRA_TEXT, text +" Link: "+ vine);
+                intent2.putExtra(Intent.EXTRA_SUBJECT, "Subject Here");
+                intent2.putExtra(Intent.EXTRA_TEXT, text + " Link: " + vine);
                 context.startActivity(Intent.createChooser(intent2, "Share Via"));
 
             }
@@ -565,25 +549,25 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
 
 
     private void shareMoreOptions(RelativeLayout share, MyHolder holder, String pId) {
+
         PopupMenu popupMenu = new PopupMenu(context, share, Gravity.END);
 
 
-        popupMenu.getMenu().add(Menu.NONE,0,0, "In chats");
-        popupMenu.getMenu().add(Menu.NONE,1,0, "In groups");
-        popupMenu.getMenu().add(Menu.NONE,2,0, "To apps");
+        popupMenu.getMenu().add(Menu.NONE, 0, 0, "In chats");
+        popupMenu.getMenu().add(Menu.NONE, 1, 0, "In groups");
+        popupMenu.getMenu().add(Menu.NONE, 2, 0, "To apps");
         popupMenu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
-            if (id==0){
+            if (id == 0) {
                 Intent intent = new Intent(context, ShareActivity.class);
                 intent.putExtra("postId", pId);
                 context.startActivity(intent);
-            }else if (id==1){
+            } else if (id == 1) {
 //                Intent intent = new Intent(context, ShareGroupActivity.class);
 //                intent.putExtra("postId", pId);
 //                context.startActivity(intent);
                 geneartelink(pId);
-            }
-            else if (id==2){
+            } else if (id == 2) {
                 String shareText = holder.pText.getText().toString().trim();
                 BitmapDrawable bitmapDrawable = (BitmapDrawable) holder.pMeme.getDrawable();
                 if (bitmapDrawable == null) {
@@ -591,24 +575,22 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 } else {
 
 
-
-
                     Call<UniqueLinkResponse> call = apiService.getUniqueLink(Long.parseLong(pId));
                     call.enqueue(new Callback<UniqueLinkResponse>() {
                         @Override
                         public void onResponse(Call<UniqueLinkResponse> call, Response<UniqueLinkResponse> response) {
-                            if (response.isSuccessful()){
-                            String uniqueLink = response.body().getUniqueLink();
-                            shareImageAndText(uniqueLink);
+                            if (response.isSuccessful()) {
+                                String uniqueLink = response.body().getUniqueLink();
+                                shareImageAndText(uniqueLink);
 
-                            }else {
+                            } else {
                                 Toast.makeText(context, "Failed to get link", Toast.LENGTH_SHORT).show();
                             }
                         }
 
                         @Override
                         public void onFailure(Call<UniqueLinkResponse> call, Throwable throwable) {
-                            Toast.makeText(context, "Failed to get link"+throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Failed to get link" + throwable.getMessage(), Toast.LENGTH_SHORT).show();
 
                         }
                     });
@@ -656,7 +638,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     private void shareTextOnly(String text) {
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType("text/*");
-        intent.putExtra(Intent.EXTRA_SUBJECT,"Subject Here");
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here");
         intent.putExtra(Intent.EXTRA_TEXT, text);
         context.startActivity(Intent.createChooser(intent, "Share Via"));
     }
@@ -683,8 +665,9 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
     private void setLikes(MyHolder holder, String postKey) {
-        checkLikeStatus(postKey,userId,holder);
+        checkLikeStatus(postKey, userId, holder);
     }
+
     private void checkLikeStatus(String postId, String userId, MyHolder holder) {
         Call<LikeResponse> call = apiService.checkLikeStatus(postId, userId, "check");
 
@@ -716,12 +699,9 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         });
 
 
+    }
 
-
-
-}
-
-    private void likePost(String postId, String userId, MyHolder holder,int position) {
+    private void likePost(String postId, String userId, MyHolder holder, int position) {
         Call<LikeResponse> call = apiService.toggleLike(postId, userId, "toggle");
 
         call.enqueue(new retrofit2.Callback<LikeResponse>() {
@@ -733,13 +713,13 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                         String status = likeResponse.getStatus();
                         if ("liked".equals(status)) {
                             isLiked = true;
-                            noLike(position,holder);
+                            noLike(position, holder);
                             Toast.makeText(context, "Post liked successfully", Toast.LENGTH_SHORT).show();
                         } else if ("unliked".equals(status)) {
                             isLiked = false;
-                            noLike(position,holder);
+                            noLike(position, holder);
 
-                                Toast.makeText(context, "Post unliked successfully", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Post unliked successfully", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(context, "Unexpected response", Toast.LENGTH_SHORT).show();
                         }
@@ -760,14 +740,6 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
 
-
-
-
-
-
-
-
-
     private void updateLikeButtonState(MyHolder holder) {
 
         if (isLiked) {
@@ -781,167 +753,163 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         }
     }
 
+    private void showMoreOptions(ImageView more, String id, String userId, String pId, String meme, String vine, int position) {
+        checkIfPostIsSaved(pId, userId, isSaved -> {
+            final boolean[] isPostSaved = {isSaved};
+            PopupMenu popupMenu = new PopupMenu(context, more, Gravity.END);
 
-
-    private void showMoreOptions(ImageView more, String id, String userId, String pId, String meme, String vine,int position) {
-
-
-        final boolean[] isSaved = {checkIfPostIsSaved(pId)};
-
-        PopupMenu popupMenu = new PopupMenu(context, more, Gravity.END);
-
-
-        if (id.equals(userId)){
-            popupMenu.getMenu().add(Menu.NONE,0,0, "Delete");
-            popupMenu.getMenu().add(Menu.NONE,1,0, "Edit");
-        }
-        popupMenu.getMenu().add(Menu.NONE, 2, 0, isSaved[0] ? "Unsave" : "Save");
-        popupMenu.getMenu().add(Menu.NONE, 3,0,"Details");
-        popupMenu.getMenu().add(Menu.NONE, 4,0,"Liked By");
-        if (!meme.equals("noImage")){
-//            popupMenu.getMenu().add(Menu.NONE, 5,0,"Download");
-        }
-        if (!vine.equals("noVideo")){
-//            popupMenu.getMenu().add(Menu.NONE, 6,0,"Download");
-        }
-        if(!meme.equals("noImage") || !vine.equals("noVideo")){
-            popupMenu.getMenu().add(Menu.NONE,7,0, "Fullscreen");
-        }
-        popupMenu.setOnMenuItemClickListener(item -> {
-            int id1 = item.getItemId();
-            if (id1 ==0){
-
-                AlertDialog alertDialog = new AlertDialog.Builder(context)
-                        .setTitle("Delete Post")
-                        .setMessage("Are you sure you want to delete this post?")
-                        .setPositiveButton(android.R.string.yes, (dialog, which) -> {
-                            // Users confirmed to delete the post
-                            beginDelete(pId, meme, vine, position);
-                        })
-                        .setNegativeButton(android.R.string.no, (dialog, which) -> {
-                            // Users cancelled the deletion
-                            dialog.dismiss();
-                        })
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .show();
-            }else if (id1 ==1){
-                Intent intent = new Intent(context, UpdatePost.class);
-                intent.putExtra("key","editPost");
-                intent.putExtra("editPostId", pId);
-                context.startActivity(intent);
+            if (id.equals(userId)) {
+                popupMenu.getMenu().add(Menu.NONE, 0, 0, "Delete");
+                popupMenu.getMenu().add(Menu.NONE, 1, 0, "Edit");
             }
-            else if (id1 ==2){
-                String firebaseAuth = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                DatabaseReference saveRef = FirebaseDatabase.getInstance().getReference().child("Saves").child(firebaseAuth).child(pId);
-                if (isSaved[0]) {
-                    // Unsave the post
-                    saveRef.removeValue().addOnSuccessListener(aVoid -> {
-                        Toast.makeText(context, "Post Unsaved", Toast.LENGTH_SHORT).show();
-                        isSaved[0] = false;
-                        item.setTitle("Save");
+            MenuItem saveItem = popupMenu.getMenu().add(Menu.NONE, 2, 0, isPostSaved[0] ? "Unsave" : "Save");
+            popupMenu.getMenu().add(Menu.NONE, 3, 0, "Details");
+            popupMenu.getMenu().add(Menu.NONE, 4, 0, "Liked By");
+            if (!meme.equals("noImage")) {
+                // popupMenu.getMenu().add(Menu.NONE, 5, 0, "Download");
+            }
+            if (!vine.equals("noVideo")) {
+                // popupMenu.getMenu().add(Menu.NONE, 6, 0, "Download");
+            }
+            if (!meme.equals("noImage") || !vine.equals("noVideo")) {
+                popupMenu.getMenu().add(Menu.NONE, 7, 0, "Fullscreen");
+            }
+
+            popupMenu.setOnMenuItemClickListener(item -> {
+                int itemId = item.getItemId();
+                if (itemId == 0) {
+                    AlertDialog alertDialog = new AlertDialog.Builder(context)
+                            .setTitle("Delete Post")
+                            .setMessage("Are you sure you want to delete this post?")
+                            .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                                beginDelete(pId, meme, vine, position);
+                            })
+                            .setNegativeButton(android.R.string.no, (dialog, which) -> {
+                                dialog.dismiss();
+                            })
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
+                } else if (itemId == 1) {
+                    Intent intent = new Intent(context, UpdatePost.class);
+                    intent.putExtra("key", "editPost");
+                    intent.putExtra("editPostId", pId);
+                    context.startActivity(intent);
+                } else if (itemId == 2) {
+
+                    String action = isPostSaved[0] ? "unsave" : "save";
+                    Call<ResponseBody> saveCall = apiService.saveUnsavePost(action, userId, pId);
+                    saveCall.enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                if (isPostSaved[0]) {
+                                    Toast.makeText(context, "Post Unsaved", Toast.LENGTH_SHORT).show();
+                                    isPostSaved[0] = false;
+                                    saveItem.setTitle("Save");
+                                    if (context instanceof Saved) {
+                                        postList.remove(position);
+                                        notifyItemRemoved(position);
+                                        notifyItemRangeChanged(position, postList.size());
+                                    }
+
+                                } else {
+                                    Toast.makeText(context, "Post Saved", Toast.LENGTH_SHORT).show();
+                                    isPostSaved[0] = true;
+                                    saveItem.setTitle("Unsave");
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable throwable) {
+                            Toast.makeText(context, "Action failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else if (itemId == 3) {
+                    Intent intent = new Intent(context, PostDetails.class);
+                    intent.putExtra("postId", pId);
+                    context.startActivity(intent);
+                } else if (itemId == 4) {
+                    Intent intent = new Intent(context, PostLikedBy.class);
+                    intent.putExtra("postId", pId);
+                    context.startActivity(intent);
+                } else if (itemId == 5) {
+                    StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(meme);
+                    picRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                        String url = uri.toString();
+                        downloadFile(context, "Image", ".png", DIRECTORY_DOWNLOADS, url);
                     }).addOnFailureListener(e -> {
                         // Handle failure
                     });
-                } else {
-                    // Save the post
-                    saveRef.setValue(true).addOnSuccessListener(aVoid -> {
-                        Toast.makeText(context, "Post Saved", Toast.LENGTH_SHORT).show();
-                        isSaved[0] = true;
-                        item.setTitle("Unsave"); // Update menu item title to "Unsave"
+                } else if (itemId == 6) {
+                    StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(vine);
+                    picRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                        String url = uri.toString();
+                        downloadFile(context, "Video", ".mp4", DIRECTORY_DOWNLOADS, url);
                     }).addOnFailureListener(e -> {
                         // Handle failure
                     });
-                }
-
-
-            }
-            else if (id1 ==3){
-                Intent intent = new Intent(context, PostDetails.class);
-                intent.putExtra("postId", pId);
-                context.startActivity(intent);
-            }
-            else if (id1 ==4){
-                Intent intent = new Intent(context, PostLikedBy.class);
-                intent.putExtra("postId", pId);
-                context.startActivity(intent);
-            }
-            else if (id1 ==5){
-                StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(meme);
-                picRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    String url = uri.toString();
-                    downloadFile(context, "Image", ".png", DIRECTORY_DOWNLOADS, url);
-
-                }).addOnFailureListener(e -> {
-
-                });
-            }
-            else if (id1 ==6){
-                StorageReference picRef = FirebaseStorage.getInstance().getReferenceFromUrl(vine);
-                picRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    String url = uri.toString();
-                    downloadFile(context, "Video", ".mp4", DIRECTORY_DOWNLOADS, url);
-
-                }).addOnFailureListener(e -> {
-
-                });
-            }else if (id1 ==7){
-                if(!vine.equals("noVideo")){
+                } else if (itemId == 7) {
                     Intent intent = new Intent(context, MediaView.class);
-                    intent.putExtra("type","video");
-                    intent.putExtra("uri",vine);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                   context.startActivity(intent);
-                }else
-                if(!meme.equals("noImage")){
-                    Intent intent = new Intent(context, MediaView.class);
-                    intent.putExtra("type","image");
-                    intent.putExtra("uri",meme);
+                    if (!vine.equals("noVideo")) {
+                        intent.putExtra("type", "video");
+                        intent.putExtra("uri", vine);
+                    } else if (!meme.equals("noImage")) {
+                        intent.putExtra("type", "image");
+                        intent.putExtra("uri", meme);
+                    }
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
                 }
+                return true;
+            });
 
-            }
-            return false;
+            popupMenu.show();
         });
-        popupMenu.show();
-
-
     }
 
-    private void beginDelete(String pId, String meme, String vine,int position) {
 
-        if (vine.equals("noVideo") && meme.equals("noImage")){
 
-            deletk(pId,position);
+    private void beginDelete(String pId, String meme, String vine, int position) {
 
-        }else if (vine.equals("noVideo")){
-            deleteImage(meme,pId,position);
+        if (vine.equals("noVideo") && meme.equals("noImage")) {
 
-        }else if (meme.equals("noImage")){
-            deleteVideo(vine,pId,position);
+            deletk(pId, position);
+
+        } else if (vine.equals("noVideo")) {
+            deleteImage(meme, pId, position);
+
+        } else if (meme.equals("noImage")) {
+            deleteVideo(vine, pId, position);
 
         }
 
     }
-    private boolean checkIfPostIsSaved(String pId) {
-        String firebaseAuth = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference saveRef = FirebaseDatabase.getInstance().getReference().child("Saves").child(firebaseAuth).child(pId);
-        final boolean[] isSaved = {false};
-        saveRef.addListenerForSingleValueEvent(new ValueEventListener() {
+    private void checkIfPostIsSaved(String postId, String userId, IsPostSavedCallback callback) {
+        Call<List<String>> call = apiService.getSavedPosts("get_saved_posts", userId);
+        call.enqueue(new Callback<List<String>>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                isSaved[0] = snapshot.exists();
+            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<String> savedPosts = response.body();
+                    boolean isSaved = savedPosts.contains(postId);
+                    callback.onResult(isSaved);
+                } else {
+                    callback.onResult(false);
+                }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                // Handle error
+            public void onFailure(Call<List<String>> call, Throwable t) {
+                callback.onResult(false);
             }
         });
-        return isSaved[0];
     }
 
-    private void deleteVideo(String videoUrl, String pId,int position) {
+
+
+
+    private void deleteVideo(String videoUrl, String pId, int position) {
         OkHttpClient client = new OkHttpClient();
 
         RequestBody formBody = new FormBody.Builder()
@@ -968,7 +936,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                         JSONObject jsonResponse = new JSONObject(responseBody);
                         String status = jsonResponse.getString("status");
                         if ("success".equals(status)) {
-                            deletk(pId,position);
+                            deletk(pId, position);
                         } else {
                             Toast.makeText(context, "Failed to delete video.", Toast.LENGTH_SHORT).show();
                         }
@@ -983,7 +951,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         });
     }
 
-    private void deleteImage(String imageUrl,String pId,int position) {
+    private void deleteImage(String imageUrl, String pId, int position) {
         OkHttpClient client = new OkHttpClient();
 
         RequestBody formBody = new FormBody.Builder()
@@ -998,35 +966,35 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         client.newCall(request).enqueue(new okhttp3.Callback() {
             @Override
             public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
-                    Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) throws IOException {
                 final String responseBody = response.body().string();
-                    if (response.isSuccessful()) {
-                        try {
-                            JSONObject jsonResponse = new JSONObject(responseBody);
-                            String status = jsonResponse.getString("status");
-                            if ("success".equals(status)) {
-                               deletk(pId,position);
+                if (response.isSuccessful()) {
+                    try {
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String status = jsonResponse.getString("status");
+                        if ("success".equals(status)) {
+                            deletk(pId, position);
 
 
-                            } else {
-                                Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                        } else {
                             Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
                         }
-                    } else {
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                         Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
                     }
+                } else {
+                    Toast.makeText(context, "Failed to delete image.", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
 
-    public void downloadFile(Context context, String fileName, String fileExtension, String destinationDirectory, String url){
+    public void downloadFile(Context context, String fileName, String fileExtension, String destinationDirectory, String url) {
         DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
         Uri uri1 = Uri.parse(url);
         DownloadManager.Request request = new DownloadManager.Request(uri1);
@@ -1036,7 +1004,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
 
-    private void deletk(String pId,int position){
+    private void deletk(String pId, int position) {
         DeleteRequestBody requestBody = new DeleteRequestBody(pId);
 
         Call<DeleteResponse> call = apiService.deletePost(requestBody);
@@ -1068,8 +1036,8 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
 
-    private void addToHisNotification(String hisUid, String pId, String notification){
-        String timestamp = ""+System.currentTimeMillis();
+    private void addToHisNotification(String hisUid, String pId, String notification) {
+        String timestamp = "" + System.currentTimeMillis();
         HashMap<Object, String> hashMap = new HashMap<>();
         hashMap.put("pId", pId);
         hashMap.put("timestamp", timestamp);
@@ -1086,6 +1054,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
                 });
 
     }
+
     public String formatViews(long views) {
         if (views < 1000) {
             return String.valueOf(views); // No formatting needed
@@ -1121,11 +1090,11 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
 
-
     @Override
     public int getItemCount() {
         return postList.size();
     }
+
     public void removeItem(int position) {
         postList.remove(position);
         notifyItemRemoved(position);
@@ -1133,9 +1102,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
     }
 
 
-
-
-    class MyHolder extends RecyclerView.ViewHolder{
+    class MyHolder extends RecyclerView.ViewHolder {
 
         final CircleImageView pDp;
         final ImageView pMeme;
@@ -1154,7 +1121,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         final RelativeLayout share;
         final RelativeLayout view_ly;
         final RelativeLayout video_share;
-//        final RelativeLayout ad;
+        //        final RelativeLayout ad;
         final ImageView pause;
         final ProgressBar load;
         final ConstraintLayout constraintLayout9;
@@ -1201,5 +1168,7 @@ public class AdapterPost extends RecyclerView.Adapter<AdapterPost.MyHolder> {
         }
     }
 
+
 }
+
 

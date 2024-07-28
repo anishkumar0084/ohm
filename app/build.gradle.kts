@@ -122,6 +122,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.devlomi:circularstatusview:1.0.1")
     implementation("com.github.OMARIHAMZA:StoryView:1.0.2-alpha")
+    implementation("androidx.work:work-runtime:2.7.1")
 
 
 

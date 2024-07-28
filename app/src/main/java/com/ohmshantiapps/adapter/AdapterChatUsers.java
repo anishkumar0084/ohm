@@ -67,11 +67,11 @@ public class AdapterChatUsers extends RecyclerView.Adapter<AdapterChatUsers.MyHo
         checkBlocked(hisUID, holder, position);
         holder.blockedIV.setVisibility(View.GONE);
         holder.blockedIV.setOnClickListener(v -> {
-            if (userList.get(position).isBlocked()){
-                unBlockUser(hisUID);
-            }else {
-                BlockUser(hisUID);
-            }
+//            if (userList.get(position).isBlocked()){
+//                unBlockUser(hisUID);
+//            }else {
+//                BlockUser(hisUID);
+//            }
         });
     }
     private void imBLockedOrNot (String hisUID){
@@ -112,7 +112,7 @@ public class AdapterChatUsers extends RecyclerView.Adapter<AdapterChatUsers.MyHo
                         for (DataSnapshot ds: snapshot.getChildren()){
                             if (ds.exists()){
                                 holder.blockedIV.setVisibility(View.VISIBLE);
-                                userList.get(position).setBlocked(true);
+//                                userList.get(position).setBlocked(true);
                             }
                         }
                     }

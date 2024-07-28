@@ -9,6 +9,12 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.ohmshantiapps.Chats.MainChat;
 import com.ohmshantiapps.R;
 import com.ohmshantiapps.databinding.ItemStatusBinding;
@@ -16,12 +22,14 @@ import com.ohmshantiapps.model.Status;
 import com.ohmshantiapps.model.UserStatus;
 
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import omari.hamza.storyview.StoryView;
 import omari.hamza.storyview.callback.StoryClickListeners;
 import omari.hamza.storyview.model.MyStory;
-
 
 public class TopStatusAdapter extends RecyclerView.Adapter<TopStatusAdapter.TopStatusViewHolder> {
 
@@ -45,16 +53,19 @@ public class TopStatusAdapter extends RecyclerView.Adapter<TopStatusAdapter.TopS
 
         UserStatus userStatus = userStatuses.get(position);
 
+
+
         Status lastStatus = userStatus.getStatuses().get(userStatus.getStatuses().size() - 1);
 
         Glide.with(context).load(lastStatus.getImageUrl()).into(holder.binding.image);
+
 
         holder.binding.circularStatusView.setPortionsCount(userStatus.getStatuses().size());
 
         holder.binding.circularStatusView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ArrayList<omari.hamza.storyview.model.MyStory> myStories = new ArrayList<>();
+                ArrayList<MyStory> myStories = new ArrayList<>();
                 for(Status status : userStatus.getStatuses()) {
                     myStories.add(new MyStory(status.getImageUrl()));
                 }
@@ -63,7 +74,7 @@ public class TopStatusAdapter extends RecyclerView.Adapter<TopStatusAdapter.TopS
                         .setStoriesList(myStories) // Required
                         .setStoryDuration(5000) // Default is 2000 Millis (2 Seconds)
                         .setTitleText(userStatus.getName()) // Default is Hidden
-                        .setSubtitleText("") // Default is Hidden
+                        .setSubtitleText(getTimeAgo(userStatus.getLastUpdated())) // Default is Hidden
                         .setTitleLogoUrl(userStatus.getProfileImage()) // Default is Hidden
                         .setStoryClickListeners(new StoryClickListeners() {
                             @Override
@@ -96,4 +107,30 @@ public class TopStatusAdapter extends RecyclerView.Adapter<TopStatusAdapter.TopS
             binding = ItemStatusBinding.bind(itemView);
         }
     }
+        public static String getTimeAgo(long time) {
+            long currentTime = System.currentTimeMillis();
+            long timeDifference = currentTime - time;
+
+            if (timeDifference >= TimeUnit.HOURS.toMillis(24)) {
+                return null; // Story is older than 24 hours
+            }
+
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(timeDifference);
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(timeDifference);
+            long hours = TimeUnit.MILLISECONDS.toHours(timeDifference);
+
+            if (seconds < 60) {
+                return "just now";
+            } else if (minutes < 60) {
+                return minutes + " minutes ago";
+            } else if (hours < 24) {
+                return hours + " hours ago";
+            } else {
+                // Format the time for "Yesterday"
+                SimpleDateFormat sdf = new SimpleDateFormat("h:mm a");
+                return "Yesterday " + sdf.format(new Date(time));
+            }
+        }
+
+
 }

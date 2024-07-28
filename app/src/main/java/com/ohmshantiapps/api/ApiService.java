@@ -2,6 +2,8 @@ package com.ohmshantiapps.api;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.ohmshantiapps.menu.WithdrawalRequest;
+import com.ohmshantiapps.menu.wallet.TotalCoinsResponse;
 import com.ohmshantiapps.model.ModelComments;
 import com.ohmshantiapps.model.ModelPost;
 import com.ohmshantiapps.model.Users;
@@ -41,7 +43,7 @@ public interface ApiService {
 
     @FormUrlEncoded
     @POST("username.php")
-    Call<String> updateUsername(
+    Call<JsonObject> updateUsername(
             @Field("username") String username,
             @Field("user_id") String userId
     );
@@ -122,6 +124,7 @@ public interface ApiService {
     );
 
 
+
     @POST("pid.php")
     Call<ModelPost[]> getPostByPid(@Body ModelPostRequest request);
 
@@ -165,6 +168,36 @@ public interface ApiService {
 
     @GET("genlink.php")
     Call<UniqueLinkResponse> getUniqueLink(@Query("post_id") Long postId);
+
+    @FormUrlEncoded
+    @POST("save.php")
+    Call<ResponseBody> saveUnsavePost(@Field("action") String action, @Field("user_id") String userId, @Field("post_id") String postId);
+
+    @GET("save.php")
+    Call<List<String>> getSavedPosts(@Query("action") String action, @Query("user_id") String userId);
+
+    @POST("pass.php")
+    @FormUrlEncoded
+    Call<ResponseBody> updatePassword(
+            @Field("user_id") int userId,
+            @Field("new_password") String newPassword
+    );
+
+    @POST("withdraw.php")
+    Call<ResponseBody> withdrawCoins(@Body WithdrawalRequest request);
+    @GET("withdraw.php")
+    Call<TotalCoinsResponse> getTotalCoins(@Query("userId") int userId);
+    @GET("coin.php")
+    Call<String> updateCoins();
+
+    @FormUrlEncoded
+    @POST("support.php")
+    Call<SupportResponse> submitSupportRequest(
+            @Field("name") String name,
+            @Field("email") String email,
+            @Field("problem_type") String problemType,
+            @Field("description") String description
+    );
 
 
 
